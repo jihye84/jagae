@@ -669,6 +669,68 @@ const PHOENIX = { key: 'phoenix', name: '봉황', cat: 'animal', orient: true, p
   C.push(p => { p.moveTo(48, 40); p.lineTo(51, 41); p.moveTo(52, 33); p.lineTo(55, 33); p.moveTo(55, 25); p.lineTo(58, 25); });
 })();
 
+/* ---- 일월오봉도 ---- */
+const MX = (s, tx, ty, flip) => new DOMMatrix([flip ? -s : s, 0, 0, s, tx, ty]);
+const placeFn = (f, m) => p => { const q = new Path2D(); f(q); p.addPath(q, m); };
+function dome(p, cx, hw, top, base) {
+  const h = base - top;
+  p.moveTo(cx - hw, base);
+  p.bezierCurveTo(cx - hw * 0.62, base - h * 0.22, cx - hw * 0.74, top, cx, top);
+  p.bezierCurveTo(cx + hw * 0.74, top, cx + hw * 0.62, base - h * 0.22, cx + hw, base);
+  p.closePath();
+}
+/* 다섯 봉우리: 봉우리 안을 작은 봉우리(산주름)로 층층이 채워 따로 오려 붙임 */
+const OBONG = { key: 'obong', name: '오봉', cat: 'land', parts: [], carve: [] };
+(function () {
+  const peaks = [[11, 13, 46], [89, 13, 46], [30, 17, 27], [70, 17, 27], [50, 21, 7]];
+  peaks.forEach(([cx, hw, top]) => {
+    OBONG.parts.push(p => dome(p, cx, hw, top, 95));
+    const H = 95 - top;
+    for (let y = top + 9, r = 0; y < 92; y += 6.5, r++) {
+      const t = (y - top) / H, half = hw * Math.min(1, 0.45 + 0.6 * t) * Math.min(1, Math.sqrt(t) * 1.6) - 4.4;
+      if (half < 0.5) { OBONG.parts.push(p => dome(p, cx, 4.6, y - 6.5, y + 2)); continue; }
+      const n = Math.max(1, Math.round(half * 2 / 9)), step = half * 2 / n;
+      for (let i = 0; i <= n; i++) { const x = cx - half + i * step + (r % 2 ? step / 2 : 0); if (x > cx + half + 0.1) continue; OBONG.parts.push(p => dome(p, x, 4.3, y - 6, y + 2)); }
+    }
+  });
+})();
+/* 폭포: 바위 절벽 사이로 물줄기가 한 가닥씩 떨어지고, 아래에 물보라 */
+const FALLS = { key: 'falls', name: '폭포', cat: 'land', parts: [], carve: [] };
+(function () {
+  const rockL = [[4, 97], [7, 70], [12, 52], [9, 36], [15, 22], [22, 10], [33, 7], [37, 18], [35, 40], [37, 62], [34, 82], [37, 97]];
+  FALLS.parts.push(p => polyline(p, rockL) || p.closePath());
+  FALLS.parts.push(p => { polyline(p, rockL.map(([x, y]) => [100 - x, y])); p.closePath(); });
+  [39.5, 46.5, 53.5, 60.5].forEach(x => FALLS.parts.push(p => band(p, bez([x - 6, 9], [x - 1.5, 7.5], [x, 13], [x, 21], 10).concat([[x, 50], [x, 88]]), () => 5.4)));
+  [[40, 89, 1], [60, 89, -1]].forEach(([cx, cy, d]) => FALLS.parts.push(p => band(p, curlPts(cx, cy, 5, 1, d > 0 ? Math.PI : 0, 1.0, d, 18), k => 3 * (1 - k * 0.6) + 0.6)));
+  FALLS.parts.push(p => { circ(p, 50, 92, 2.4); circ(p, 44, 95, 1.8); circ(p, 56, 95, 1.8); circ(p, 32, 92, 1.5); circ(p, 68, 92, 1.5); });
+  FALLS.carve.push(p => { [[12, 30, 20, 40], [10, 58, 22, 64], [24, 14, 30, 24], [14, 80, 26, 84], [28, 46, 31, 56]].forEach(q => { p.moveTo(q[0], q[1]); p.lineTo(q[2], q[3]); p.moveTo(100 - q[0], q[1]); p.lineTo(100 - q[2], q[3]); }); });
+})();
+/* 적송: 붉은 줄기 끝마다 둥근 솔잎 덩이 */
+const REDPINE = { key: 'redpine', name: '적송', cat: 'plant', parts: [], carve: [] };
+(function () {
+  const P = REDPINE.parts, C = REDPINE.carve;
+  const trunk = bez([52, 99], [57, 78], [43, 54], [50, 18], 24);
+  const cl = [[50, 12, 1.1], [26, 28, 1], [75, 26, 1], [24, 50, 0.95], [77, 48, 0.95], [30, 70, 0.85], [72, 68, 0.85]];
+  const tAt = [0.95, 0.72, 0.7, 0.5, 0.48, 0.3, 0.28];
+  cl.forEach(([cx, cy], i) => { if (!i) return; const q = trunk[Math.round(tAt[i] * 24)]; P.push(p => band(p, bez(q, [q[0] + (cx - q[0]) * 0.4, q[1] - 3], [cx - (cx - q[0]) * 0.2, cy + 4], [cx, cy + 3], 10), taper(3.6, 2))); });
+  P.push(p => band(p, trunk, taper(10, 4)));
+  cl.forEach(([cx, cy, k]) => P.push(p => { circ(p, cx - 7 * k, cy + 1.5 * k, 6.2 * k); circ(p, cx, cy - 1.5 * k, 7.5 * k); circ(p, cx + 7 * k, cy + 1.5 * k, 6.2 * k); }));
+  cl.forEach(([cx, cy, k]) => C.push(p => { for (let j = 0; j < 9; j++) { const a = Math.PI * (1.08 + j * 0.105); p.moveTo(cx, cy + 5 * k); p.lineTo(cx + Math.cos(a) * 11 * k, cy + 5 * k + Math.sin(a) * 9 * k); } }));
+  C.push(p => { [0.12, 0.25, 0.38, 0.5, 0.62].forEach(t => { const q = trunk[Math.round(t * 24)]; p.moveTo(q[0] - 2.5, q[1] + 1); p.quadraticCurveTo(q[0], q[1] - 1.5, q[0] + 2.5, q[1] + 1); }); });
+})();
+/* 일월오봉도: 해와 달, 다섯 봉우리, 폭포 둘, 적송 둘, 아래 물결 */
+const IRWOL = { key: 'irwol', name: '일월오봉도', cat: 'land', parts: [], carve: [] };
+(function () {
+  const P = IRWOL.parts, C = IRWOL.carve;
+  const put = (m, M) => { m.parts.forEach(f => P.push(placeFn(f, M))); m.carve.forEach(f => C.push(placeFn(f, M))); };
+  put(OBONG, MX(0.66, 17, 17));
+  put(FALLS, MX(0.16, 21, 57)); put(FALLS, MX(0.16, 63, 57));
+  put(REDPINE, MX(0.36, -6, 42)); put(REDPINE, MX(0.36, 106, 42, true));
+  for (let r = 0; r < 4; r++) for (let x = -3.4 + (r % 2) * 3.4; x <= 104; x += 6.8) [3.4, 2.3, 1.2].forEach(rr => P.push(p => circ(p, x, 78 + r * 3.4, rr)));
+  P.push(p => circ(p, 29, 26, 4.4));   // 달
+  P.push(p => circ(p, 71, 26, 4.4));   // 해
+})();
+
 const MOTIFS = [
   { key: 'free', name: '손으로', cat: 'free' },
   { key: 'sun', name: '해', cat: 'sky', parts: [p => circ(p, 50, 50, 44)], carve: [p => { circ(p, 50, 50, 36); }] },
@@ -740,6 +802,7 @@ const MOTIFS = [
       p => polyline(p, bez([74, 52], [72, 64], [70, 74], [66, 86], 10)),
       p => { p.moveTo(40, 60); p.lineTo(46, 63); p.moveTo(36, 72); p.lineTo(43, 75); p.moveTo(64, 46); p.lineTo(70, 44); p.moveTo(18, 62); p.lineTo(23, 64); }
     ] },
+  IRWOL, OBONG, FALLS,
   { key: 'rock', name: '바위', cat: 'land', parts: [
       // 괴석: 구멍이 숭숭 뚫린 수석과 받침 돌
       p => { p.moveTo(6, 97); p.bezierCurveTo(8, 88, 18, 85, 28, 89); p.lineTo(30, 97); p.closePath(); },
@@ -784,6 +847,7 @@ const MOTIFS = [
       p => rays(p, 50, 26, 4, 19, Math.PI * 1.05, Math.PI * 1.95, 9), p => rays(p, 86, 52, 3, 12, Math.PI * 1.08, Math.PI * 1.92, 6),
       p => { [[45, 92], [47, 84], [44, 76], [45, 68], [48, 60], [52, 50]].forEach(([x, y]) => { p.moveTo(x - 3, y); p.arc(x, y, 3, Math.PI, 0, true); }); }
     ] },
+  REDPINE,
   { key: 'bamboo', name: '대나무', cat: 'plant', parts: [
       // 마디로 끊어진 줄기(조각 3개) + 곁가지 + 아래로 드리운 个자 잎
       p => { p.moveTo(46, 98); p.lineTo(45.5, 72); p.lineTo(51.5, 72); p.lineTo(52, 98); p.closePath(); },
