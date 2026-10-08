@@ -860,18 +860,21 @@ const MOTIFS = [
       p => line(p, [47, 56, 22, 77]), p => line(p, [53, 56, 78, 77]), p => line(p, [47, 58, 32, 84]), p => line(p, [53, 58, 68, 84])
     ] },
   { key: 'turtle', name: '거북', cat: 'animal', orient: true, parts: [
-      // 십장생 거북: 등딱지 + 길게 나부끼는 털꼬리(녹모)
-      p => band(p, bez([26, 54], [16, 60], [10, 50], [2, 56], 16), taper(5, 1.2)),
-      p => band(p, bez([26, 52], [16, 46], [8, 42], [0, 34], 16), taper(4.5, 1)),
-      p => band(p, bez([26, 56], [18, 66], [10, 70], [2, 68], 16), taper(4.5, 1)),
-      p => leaf(p, 66, 27, 22, 9, -0.75), p => leaf(p, 66, 77, 22, 9, 0.75), p => leaf(p, 32, 32, 16, 7, 0.75), p => leaf(p, 32, 72, 16, 7, -0.75),
-      p => { ell(p, 85, 52, 9, 7, 0); },
-      p => ell(p, 52, 52, 27, 21, 0)
+      // 뒷지느러미와 꼬리
+      p => { p.moveTo(17, 63); p.bezierCurveTo(10, 64, 5, 68, 2, 75); p.bezierCurveTo(9, 76, 15, 72, 20, 67); p.closePath(); },
+      p => poly(p, [9, 62, 3, 62, 9, 65]),
+      // 목과 머리
+      p => band(p, bez([72, 54], [78, 51], [82, 47], [86, 44], 10), taper(11, 9)),
+      p => { p.moveTo(81, 44); p.bezierCurveTo(81, 37, 88, 35, 93, 37); p.bezierCurveTo(97, 38, 99, 42, 98, 44); p.bezierCurveTo(95, 47, 88, 49, 83, 48); p.closePath(); },
+      // 앞지느러미 (크게 노 젓는 모양)
+      p => { p.moveTo(56, 62); p.bezierCurveTo(68, 63, 84, 69, 94, 83); p.bezierCurveTo(84, 85, 70, 79, 54, 69); p.closePath(); },
+      // 등딱지: 등줄 비늘 · 옆구리 비늘 · 가장자리 비늘을 한 장씩 (사이는 옻칠이 드러남)
+      ...turtleScutes()
     ], carve: [
-      p => { poly(p, [44, 45, 60, 45, 66, 52, 60, 59, 44, 59, 38, 52]); },
-      p => line(p, [44, 45, 38, 34]), p => line(p, [60, 45, 66, 34]), p => line(p, [44, 59, 38, 70]), p => line(p, [60, 59, 66, 70]),
-      p => line(p, [38, 52, 25.5, 52]), p => line(p, [66, 52, 78.5, 52]), p => circ(p, 89, 50, 0.9),
-      p => polyline(p, bez([24, 54], [16, 58], [10, 52], [4, 55], 10))
+      p => circ(p, 92.5, 40, 1), p => { p.moveTo(97.5, 43.5); p.lineTo(93, 44.5); },
+      p => { [[84, 38.5, 87.5, 37.5], [85, 46.5, 89, 46.5], [83.5, 42.5, 87, 42], [88, 40, 89, 43]].forEach(q => { p.moveTo(q[0], q[1]); p.lineTo(q[2], q[3]); }); },
+      p => { for (let i = 1; i < 6; i++) { const t = i / 6; p.moveTo(56 + 36 * t, 62 + 15 * t * t + 2); p.lineTo(58 + 34 * t, 68 + 14 * t * t); } p.moveTo(60, 65); p.bezierCurveTo(72, 68, 82, 73, 90, 81); },
+      p => { p.moveTo(16, 65); p.lineTo(6, 72); p.moveTo(13, 64); p.lineTo(10, 69); }
     ] },
   { key: 'deer', name: '사슴', cat: 'animal', parts: [
       // 서 있는 땅과 새싹
@@ -1031,6 +1034,29 @@ function capRays(p, cx, cy, w, h, rot) {
     const a = Math.PI * (1.08 + i * 0.105), x = Math.cos(a), y = Math.sin(a) * 0.85;
     const q1 = T1(x, y), q2 = T2(x, y); p.moveTo(q1[0], q1[1]); p.lineTo(q2[0], q2[1]);
   }
+}
+/* 거북 등딱지 비늘: 둥근 등을 세 줄(등줄·옆구리·가장자리)로 나누고, 칸 경계는 부채살처럼 기울이고
+   줄 경계는 육각 비늘처럼 가운데가 처지게. 칸 사이를 조금 띄워 옻칠이 드러나게 */
+function turtleScutes() {
+  const cx = 44, rx = 37, top = 62, H = 42, g = 0.95;
+  const sq = x => Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2));
+  const T = x => top - H * sq(x), B = x => top + 4.5 * sq(x);
+  const C1 = [8.5, 25, 39, 53, 67, 79.5], C2 = [7.5, 17, 31, 46, 61, 80.5];
+  const tri = (cols, x) => { for (let i = 0; i < cols.length - 1; i++) if (x >= cols[i] && x <= cols[i + 1]) { const t = (x - cols[i]) / (cols[i + 1] - cols[i]); return 1 - Math.abs(2 * t - 1); } return 0; };
+  const F = [x => 0, x => 0.4 + 0.09 * tri(C1, x), x => 0.82 + 0.05 * tri(C2, x), x => 1];
+  const X = (c, f, tilt) => tilt ? cx + (c - cx) * (1.16 - 0.32 * f) : c;
+  const Y = (x, f) => T(x) + f * (B(x) - T(x));
+  const cell = (a, b, row, tilt) => p => {
+    const n = 10, ga = g / (b - a), pts = [];
+    for (let i = 0; i <= n; i++) { const u = ga + (1 - 2 * ga) * i / n, m = a + (b - a) * u, f = F[row](m), x = X(m, f, tilt); pts.push([x, Y(x, f) + (row === 0 ? g * 0.3 : g)]); }
+    for (let i = n; i >= 0; i--) { const u = ga + (1 - 2 * ga) * i / n, m = a + (b - a) * u, f = F[row + 1](m), x = X(m, f, tilt); pts.push([x, Y(x, f) - (row === 2 ? g * 0.3 : g)]); }
+    polyline(p, pts); p.closePath();
+  };
+  const out = [];
+  for (let i = 0; i < C1.length - 1; i++) out.push(cell(C1[i], C1[i + 1], 0, true));
+  for (let i = 0; i < C2.length - 1; i++) out.push(cell(C2[i], C2[i + 1], 1, true));
+  for (let x = 7; x < 80.9; x += 7.4) out.push(cell(x, Math.min(81, x + 7.4), 2, false));
+  return out;
 }
 function lotusPetal(p, a, L, w) { leaf(p, 50 + Math.cos(a) * L / 2, 82 + Math.sin(a) * L / 2, L, w, a); }
 
