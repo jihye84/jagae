@@ -851,6 +851,35 @@ const BUTTERFLIES = [
   put(round, BUTTERFLIES[0], MX(0.72, 14, 16));
 })();
 
+/* ---- 물 채우기: 끌어서 정한 네모 범위를 물결로 채움 (위쪽은 물마루가 자연스럽게 솟게) ---- */
+const PADO_ITEMS = [
+  (p, U, H) => band(p, bez([-0.1 * U, 0.46 * H], [0.22 * U, 0.34 * H], [0.26 * U, -0.18 * H], [0.6 * U, -0.25 * H], 18)
+    .concat(curlPts(0.6 * U, -0.08 * H, 0.17 * H, 0.03 * H, -Math.PI / 2, 1.05, 1, 20).slice(1)), k => H * (0.3 * (1 - k) + 0.035)),
+  (p, U, H) => band(p, bez([-0.02 * U, 0.46 * H], [0.22 * U, 0.38 * H], [0.24 * U, 0.02 * H], [0.48 * U, -0.02 * H], 16)
+    .concat(curlPts(0.48 * U, 0.08 * H, 0.1 * H, 0.02 * H, -Math.PI / 2, 1.0, 1, 14).slice(1)), k => H * (0.16 * (1 - k) + 0.03)),
+  (p, U, H) => { circ(p, 0.86 * U, -0.3 * H, 0.035 * H); circ(p, 0.93 * U, -0.18 * H, 0.025 * H); circ(p, 0.8 * U, -0.36 * H, 0.02 * H); }
+];
+const at = (f, x, y) => p => { const q = new Path2D(); f(q); p.addPath(q, new DOMMatrix([1, 0, 0, 1, x, y])); };
+const WATER = [
+  { key: 'w_pado', name: '파도', cat: 'land', fill: (R, c) => {
+      const U = c, H = c, out = [], dy = H * 0.58;
+      for (let r = 0, y = R.y + H * 0.28; y < R.y + R.h + H * 0.5; r++, y += dy)
+        PADO_ITEMS.forEach((it, j) => { if (j === 2 && r) return;
+          for (let x = R.x - U * 1.2 + (r % 2) * U * 0.5; x < R.x + R.w + U; x += U) out.push(at(p => it(p, U, H), x, y)); });
+      return out; } },
+  { key: 'w_chung', name: '비늘물결', cat: 'land', fill: (R, c) => {
+      const U = c * 0.8, out = [], r0 = 0.54 * U, dy = 0.3 * U;
+      for (let k = 0, y = R.y; y < R.y + R.h + r0; k++, y += dy)
+        [1, 0.72, 0.46, 0.2].forEach(f => { for (let x = R.x - U + (k % 2 ? 0 : U / 2); x < R.x + R.w + U; x += U) out.push(p => circ(p, x, y, r0 * f)); });
+      return out; } },
+  { key: 'w_gubi', name: '굽이물결', cat: 'land', fill: (R, c) => {
+      const U = c, H = c, out = [], dy = 0.24 * H;
+      for (let j = 0, y = R.y; y < R.y + R.h + dy; j++, y += dy)
+        out.push(p => { const pts = []; for (let x = R.x - U * 0.3; x <= R.x + R.w + U * 0.3; x += U / 16) pts.push([x, y + 0.08 * H * Math.sin(((x - R.x) / U + j * 0.33) * TAU)]); band(p, pts, () => H * 0.1); });
+      for (let x = R.x + U * 0.75; x < R.x + R.w; x += U) out.push(p => band(p, curlPts(x + 0.06 * H, R.y - 0.16 * H, 0.075 * H, 0.012 * H, Math.PI, 1.05, 1, 16), k => H * (0.075 * (1 - k) + 0.02)));
+      return out; } }
+];
+
 const MOTIFS = [
   { key: 'free', name: '손으로', cat: 'free' },
   { key: 'sun', name: '해', cat: 'sky', parts: [p => circ(p, 50, 50, 44)], carve: [p => { circ(p, 50, 50, 36); }] },
@@ -923,6 +952,7 @@ const MOTIFS = [
       p => { p.moveTo(40, 60); p.lineTo(46, 63); p.moveTo(36, 72); p.lineTo(43, 75); p.moveTo(64, 46); p.lineTo(70, 44); p.moveTo(18, 62); p.lineTo(23, 64); }
     ] },
   IRWOL, OBONG, FALLS,
+  ...WATER,
   { key: 'rock', name: '바위', cat: 'land', parts: [
       // 괴석: 구멍이 숭숭 뚫린 수석과 받침 돌
       p => { p.moveTo(6, 97); p.bezierCurveTo(8, 88, 18, 85, 28, 89); p.lineTo(30, 97); p.closePath(); },
@@ -1173,23 +1203,6 @@ const MOTIFS = [
   { key: 'b_gong', name: '工자띠', cat: 'border', band: { rails: [0.5], unit: [
       [[0.5, 0.1], [0.5, 0.9]], [[0.3, 0.1], [0.7, 0.1]], [[0.3, 0.9], [0.7, 0.9]], [[0, 0.28], [0, 0.72]]] } },
   { key: 'b_chang', name: '창살띠', cat: 'border', band: { rails: [0.3, 0.7], unit: [[[0.5, -0.18], [0.5, 1.18]], [[0, 0.3], [0, 0.7]]] } },
-  { key: 'b_pado', name: '파도띠', cat: 'border', band: { unit: [
-      { draw: (p, i, U, H) => { const x = i * U;
-          band(p, bez([x - 0.1 * U, 0.46 * H], [x + 0.22 * U, 0.34 * H], [x + 0.26 * U, -0.18 * H], [x + 0.6 * U, -0.25 * H], 18)
-            .concat(curlPts(x + 0.6 * U, -0.08 * H, 0.17 * H, 0.03 * H, -Math.PI / 2, 1.05, 1, 20).slice(1)), k => H * (0.3 * (1 - k) + 0.035)); } },
-      { draw: (p, i, U, H) => { const x = i * U;
-          band(p, bez([x - 0.02 * U, 0.46 * H], [x + 0.22 * U, 0.38 * H], [x + 0.24 * U, 0.02 * H], [x + 0.48 * U, -0.02 * H], 16)
-            .concat(curlPts(x + 0.48 * U, 0.08 * H, 0.1 * H, 0.02 * H, -Math.PI / 2, 1.0, 1, 14).slice(1)), k => H * (0.16 * (1 - k) + 0.03)); } },
-      { draw: (p, i, U, H) => { const x = i * U; circ(p, x + 0.86 * U, -0.3 * H, 0.035 * H); circ(p, x + 0.93 * U, -0.18 * H, 0.025 * H); circ(p, x + 0.8 * U, -0.36 * H, 0.02 * H); } }
-    ] } },
-  { key: 'b_chunghae', name: '비늘물결', cat: 'border', band: { unit: [0, 1, 2, 3, 4].flatMap(k => [1, 0.72, 0.46, 0.2].map(f => (
-      { draw: (p, i, U, H, n) => { const r = 0.54 * U, y = (-0.42 + k * 0.22) * H; circ(p, (i + (k % 2 ? 0 : 0.5)) * U, y, r * f); if (k % 2 && i === n - 1) circ(p, n * U, y, r * f); } }))) } },
-  { key: 'b_gubi', name: '굽이물결', cat: 'border', band: { unit: [
-      ...[-0.12, 0.1, 0.31].map((y0, j) => ({ draw: (p, i, U, H, n, L) => { if (i) return;
-          const pts = []; for (let x = -0.2 * U; x <= L + 0.2 * U; x += U / 16) pts.push([x, y0 * H + 0.08 * H * Math.sin((x / U + j * 0.33) * TAU)]);
-          band(p, pts, () => H * 0.1); } })),
-      { draw: (p, i, U, H) => { const cx = (i + 0.75) * U + 0.06 * H, cy = -0.28 * H; band(p, curlPts(cx, cy, 0.075 * H, 0.012 * H, Math.PI, 1.05, 1, 16), k => H * (0.075 * (1 - k) + 0.02)); } }
-    ] } },
   { key: 'b_dangcho', name: '당초띠', cat: 'border', band: { unit: [
       { smooth: true, pts: Array.from({ length: 21 }, (_, i) => [i / 20, 0.5 - 0.3 * Math.sin(i / 20 * TAU)]) },
       { smooth: true, pts: curlPts(0.34, 0.44, 0.2, 0.04, Math.PI * 0.95, 1.05, 1, 18) },
@@ -1253,6 +1266,38 @@ function turtleScutes() {
   return out;
 }
 function lotusPetal(p, a, L, w) { leaf(p, 50 + Math.cos(a) * L / 2, 82 + Math.sin(a) * L / 2, L, w, a); }
+
+/* 채우기 무늬: 시작점과 끝점이 만드는 네모 안을 무늬로 채움. 오른쪽→왼쪽으로 끌면 물결 방향이 뒤집힘 */
+function fillGeom() {
+  const a = st.start, b = st.cur || st.start, cell = Math.max(40 * DPR, st.s * 2.6);
+  let x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+  if (w < 12 * DPR && h < 12 * DPR) { w = cell * 6; h = cell * 2.4; x = a.x - w / 2; y = a.y - h / 2; }
+  else { w = Math.max(w, cell); h = Math.max(h, cell * 0.6); }
+  return { x, y, w, h, cell, flip: b.x < a.x - 10 * DPR };
+}
+function stampFill(m, g, B, preview) {
+  const c = preview ? ox : dx, pieces = m.fill(g, g.cell);
+  if (!preview || pieces.length < 700) {
+    c.save();
+    if (g.flip) { c.translate(2 * g.x + g.w, 0); c.scale(-1, 1); }
+    c.beginPath(); c.rect(g.x, g.y - g.cell * 0.7, g.w, g.h + g.cell * 0.7); c.clip();
+    const base = Math.random();
+    pieces.forEach(f => {
+      const pth = new Path2D(); f(pth);
+      if (preview) { c.fillStyle = 'rgba(232,224,234,.28)'; c.fill(pth); }
+      else {
+        c.lineJoin = 'round'; c.lineWidth = Math.max(2, 2.2 * DPR); c.strokeStyle = 'rgb(0,0,' + B + ')'; c.stroke(pth);
+        c.fillStyle = fillFor(base + R(-0.1, 0.1), B, 255); c.fill(pth);
+      }
+    });
+    c.restore();
+  }
+  if (preview) {
+    ovDirty = true;
+    ox.save(); ox.setLineDash([6 * DPR, 5 * DPR]); ox.lineWidth = 1.6 * DPR; ox.strokeStyle = 'rgba(232,224,234,.9)';
+    ox.fillStyle = 'rgba(232,224,234,.06)'; ox.fillRect(g.x, g.y, g.w, g.h); ox.strokeRect(g.x, g.y, g.w, g.h); ox.restore();
+  }
+}
 
 /* 띠 무늬: 끈 선을 따라 한 칸 무늬를 이어 붙인다. 위아래 테두리 + 칸마다 끊음질 띠 */
 function bandPieces(m, L, H) {
@@ -1522,7 +1567,7 @@ function add(x, y, wf) {
   if (st.tool === 'lasso' && st.motif) {
     if (!st.start) st.start = p;
     st.cur = p; st.last = p;
-    if (!st.silent) { clearOverlay(); const mm = MOTIF_BY[st.motif]; if (mm.band) stampBand(mm, bandGeom(), st.B, true); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, true, g.rot); } }
+    if (!st.silent) { clearOverlay(); const mm = MOTIF_BY[st.motif]; if (mm.fill) stampFill(mm, fillGeom(), st.B, true); else if (mm.band) stampBand(mm, bandGeom(), st.B, true); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, true, g.rot); } }
     return;
   }
   if (st.tool === 'lasso') {
@@ -1684,7 +1729,7 @@ function tapDisc() {
 }
 function end() {
   if (st && st.last && st.len < 4 * DPR && (st.tool === 'slab' || st.tool === 'shard')) tapDisc();
-  if (st && st.tool === 'lasso' && st.motif && st.start) { const mm = MOTIF_BY[st.motif]; if (mm.band) stampBand(mm, bandGeom(), st.B, false); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, false, g.rot); } clearOverlay(); }
+  if (st && st.tool === 'lasso' && st.motif && st.start) { const mm = MOTIF_BY[st.motif]; if (mm.fill) stampFill(mm, fillGeom(), st.B, false); else if (mm.band) stampBand(mm, bandGeom(), st.B, false); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, false, g.rot); } clearOverlay(); }
   else if (st && st.tool === 'lasso') { slab(st.silent ? st.pts : tidyLoop(st.pts), st.B, st.ph); clearOverlay(); }
   if (st && st.tool === 'strip' && st.inStrip && st.last && st.stripStart) drawStrip(st.stripStart, st.last);
   if (st && st.tool === 'slab') slabSeams();
@@ -1953,6 +1998,7 @@ state.cat = (MOTIF_BY[state.motif] || {}).cat || 'sky';
 const tabsEl = document.createElement('div'); tabsEl.className = 'tabs'; tabsEl.setAttribute('role', 'tablist');
 const gridEl = document.createElement('div'); gridEl.className = 'grid';
 const tipEl = document.createElement('p'); tipEl.className = 'tip'; tipEl.textContent = '톡 찍기 · 끌면 크기와 방향';
+function setTip() { const m = MOTIF_BY[state.motif] || {}; tipEl.textContent = m.fill ? '끌어서 채울 범위를 정해요' : m.band ? '끌어서 띠 길이와 방향을 정해요' : m.parts ? '톡 찍기 · 끌면 크기와 방향' : '테두리를 그려 오려요'; }
 shapesEl.append(tabsEl, gridEl, tipEl);
 CATS.forEach(([k, name]) => {
   const t = document.createElement('button'); t.type = 'button'; t.setAttribute('role', 'tab'); t.dataset.cat = k; t.textContent = name;
@@ -1961,6 +2007,15 @@ CATS.forEach(([k, name]) => {
 function drawIcon(cv, m) {
   const c = cv.getContext('2d'), S = cv.width, pal = ICON_PAL[state.shell] || ICON_PAL[0];
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, S, S);
+  if (m.fill) {
+    c.scale(S / 100, S / 100); c.save(); c.beginPath(); c.rect(4, 18, 92, 78); c.clip();
+    m.fill({ x: 4, y: 40, w: 92, h: 56 }, 30).forEach((f, k) => {
+      const p = new Path2D(); f(p);
+      c.lineJoin = 'round'; c.lineWidth = 2; c.strokeStyle = '#100b09'; c.stroke(p);
+      c.fillStyle = pal[k % 5]; c.fill(p);
+    });
+    c.restore(); return;
+  }
   if (m.band) {
     c.scale(S / 100, S / 100); c.translate(2, 50);
     let k = 0;
@@ -1991,7 +2046,7 @@ function drawIcon(cv, m) {
 }
 function renderShapes() {
   tabsEl.querySelectorAll('button').forEach(t => t.setAttribute('aria-selected', String(t.dataset.cat === state.cat)));
-  gridEl.textContent = '';
+  gridEl.textContent = ''; setTip();
   MOTIFS.filter(m => m.cat === state.cat).forEach(m => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'tile'; b.dataset.motif = m.key; b.setAttribute('aria-pressed', String(m.key === state.motif));
@@ -2010,7 +2065,7 @@ tabsEl.addEventListener('click', e => {
 });
 gridEl.addEventListener('click', e => {
   const b = e.target.closest('.tile'); if (!b) return;
-  state.motif = b.dataset.motif;
+  state.motif = b.dataset.motif; setTip();
   gridEl.querySelectorAll('.tile').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
 });
 renderShapes();
