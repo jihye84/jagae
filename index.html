@@ -746,6 +746,20 @@ function scallop(p, pts, depth) {          // 점들을 잇는 물결 가장자�
   for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
     p.quadraticCurveTo(mx - dy / L * depth, my + dx / L * depth, b[0], b[1]); }
 }
+/* 앉은나비: 옆에서 본, 날개를 위로 모아 접고 꽃에 앉은 나비 (오른쪽을 봄) */
+const SIDE_BF = { key: 'bf_side', name: '앉은나비', cat: 'animal', orient: true, parts: [
+    p => { p.moveTo(54, 66); p.bezierCurveTo(46, 74, 36, 82, 30, 90); p.bezierCurveTo(40, 94, 52, 90, 60, 72); p.closePath(); },          // 뒷날개
+    p => { p.moveTo(56, 64); p.bezierCurveTo(48, 46, 44, 26, 48, 6); p.bezierCurveTo(60, 14, 68, 36, 64, 62); p.closePath(); },           // 먼 앞날개
+    p => { p.moveTo(56, 66); p.bezierCurveTo(42, 54, 28, 32, 26, 8); p.bezierCurveTo(44, 12, 60, 34, 62, 62); p.closePath(); },           // 가까운 앞날개
+    p => { p.moveTo(54, 60); p.bezierCurveTo(44, 50, 36, 34, 34, 18); p.bezierCurveTo(44, 22, 54, 38, 57, 58); p.closePath(); },          // 앞날개 안쪽 무늬
+    p => circ(p, 44, 84, 3.4),                                                                                                        // 뒷날개 눈점
+    p => { ell(p, 60, 68, 9, 3, -0.15); circ(p, 70.5, 65.5, 3); },                                                                      // 몸과 머리
+    p => { band(p, bez([72, 63], [77, 54], [82, 46], [86, 40], 10).concat(curlPts(88, 42, 2.5, 0.6, Math.PI * 1.2, 0.9, 1, 8).slice(1)), () => 1.1);
+           band(p, bez([71, 62], [74, 52], [77, 44], [78, 37], 10).concat(curlPts(80.5, 37.5, 2.5, 0.6, Math.PI, 0.9, 1, 8).slice(1)), () => 1.1); },
+    p => { band(p, [[58, 70], [56, 76], [58, 80]], () => 1); band(p, [[62, 70], [62, 77], [65, 80]], () => 1); band(p, [[66, 69], [68, 75], [72, 78]], () => 1); }
+  ], holes: [p => { [[30, 12], [34, 20], [38, 28]].forEach(([x, y]) => circ(p, x, y, 1.3)); }, p => circ(p, 44, 84, 1.4)],
+  carve: [p => { p.moveTo(56, 64); p.lineTo(30, 10); p.moveTo(58, 64); p.lineTo(48, 10); p.moveTo(56, 70); p.lineTo(36, 88); p.moveTo(59, 66); p.lineTo(57, 70); p.moveTo(63, 66); p.lineTo(62, 70); }] };
+
 const BUTTERFLIES = [
   { key: 'butterfly', name: '범나비', cat: 'animal', orient: true, parts: [
       ...sym([
@@ -800,18 +814,42 @@ const BUTTERFLIES = [
       ...bfBody(32, 30)
     ], holes: sym([p => circ(p, 64, 64, 1.8), p => { circ(p, 86, 36, 1.4); circ(p, 80, 41, 1.2); }]),
     carve: sym([p => { p.moveTo(54, 49); p.lineTo(74, 47); p.moveTo(54, 58); p.lineTo(68, 60); }]) },
-  { key: 'bf_side', name: '앉은나비', cat: 'animal', orient: true, parts: [
-      // 옆에서 본 앉은 나비: 날개를 위로 접고 있음
-      p => { p.moveTo(44, 62); p.bezierCurveTo(30, 66, 16, 70, 10, 66); p.bezierCurveTo(18, 60, 30, 56, 44, 58); p.closePath(); },
-      p => { p.moveTo(46, 60); p.bezierCurveTo(40, 72, 38, 86, 42, 96); p.bezierCurveTo(50, 92, 54, 80, 52, 64); p.closePath(); },
-      p => { p.moveTo(48, 56); p.bezierCurveTo(52, 38, 62, 18, 80, 6); p.bezierCurveTo(82, 18, 76, 40, 54, 60); p.closePath(); },
-      p => { p.moveTo(46, 56); p.bezierCurveTo(46, 40, 50, 24, 58, 12); p.bezierCurveTo(62, 26, 58, 44, 50, 58); p.closePath(); },
-      p => { p.moveTo(42, 58); p.bezierCurveTo(30, 52, 22, 44, 24, 34); p.bezierCurveTo(34, 40, 42, 48, 46, 56); p.closePath(); },
-      p => { ell(p, 50, 62, 3, 9, -0.5); circ(p, 55, 54, 2.6); },
-      p => { band(p, bez([56, 52], [62, 46], [66, 42], [72, 40], 8), () => 1.1); band(p, bez([56, 53], [63, 50], [68, 49], [74, 48], 8), () => 1.1); }
-    ], holes: [p => { leaf(p, 66, 26, 18, 4, -0.95); }, p => leaf(p, 52, 38, 14, 3, -1.35)],
-    carve: [p => { p.moveTo(50, 58); p.lineTo(76, 12); p.moveTo(48, 58); p.lineTo(28, 38); p.moveTo(46, 62); p.lineTo(16, 66); p.moveTo(48, 64); p.lineTo(45, 90); }] }
+  SIDE_BF,
+  { key: 'bf_tiger', name: '호랑나비', cat: 'animal', orient: true, parts: [
+      ...sym([
+        // 뒷날개: 긴 제비꼬리
+        p => { p.moveTo(52, 54); p.bezierCurveTo(62, 52, 76, 54, 80, 62); p.bezierCurveTo(82, 70, 76, 76, 70, 78); p.bezierCurveTo(70, 86, 72, 92, 70, 98); p.bezierCurveTo(66, 92, 64, 86, 63, 80); p.bezierCurveTo(57, 78, 53, 70, 52, 60); p.closePath(); },
+        // 앞날개
+        p => { p.moveTo(52, 46); p.bezierCurveTo(58, 30, 76, 18, 96, 18); p.bezierCurveTo(95, 30, 92, 42, 86, 50); p.bezierCurveTo(74, 54, 62, 54, 52, 50); p.closePath(); },
+        // 뒷날개의 붉은 눈점과 가장자리 푸른 점 (따로 오린 조각)
+        p => circ(p, 62, 72, 3.2),
+        p => { circ(p, 76, 66, 2); circ(p, 72, 74, 1.8); circ(p, 80, 59, 1.7); },
+        p => band(p, [[51, 26], [56, 17], [62, 9]], () => 1.1), p => circ(p, 62.5, 8.5, 1.8)
+      ]),
+      ...bfBody(32, 30)
+    ], holes: sym([
+      // 앞날개를 가로지르는 검은 줄무늬
+      p => { [[56, 44, 66, 25], [62, 47, 73, 23], [69, 49, 81, 20], [76, 50, 88, 19]].forEach(([x1, y1, x2, y2]) => band(p, [[x1, y1], [x2, y2]], k => 2.2 * (1 - k * 0.5))); },
+      p => { [[91, 24], [90, 31], [88, 38], [85, 44]].forEach(([x, y]) => circ(p, x, y, 1.2)); },
+      p => { p.moveTo(54, 58); p.bezierCurveTo(60, 58, 66, 60, 70, 64); p.lineTo(68, 66); p.bezierCurveTo(64, 63, 60, 61, 54, 61); p.closePath(); }
+    ]), carve: [p => { for (let y = 38; y < 60; y += 3.5) { p.moveTo(47.6, y); p.lineTo(52.4, y); } }] },
+  { key: 'bf_pair', name: '쌍나비', cat: 'animal', parts: [], carve: [], holes: [] },
+  { key: 'bf_round', name: '나비원문', cat: 'animal', parts: [], carve: [], holes: [] }
 ];
+
+(function () {
+  const put = (dst, m, M) => { m.parts.forEach(f => dst.parts.push(placeFn(f, M))); (m.holes || []).forEach(f => dst.holes.push(placeFn(f, M))); m.carve.forEach(f => dst.carve.push(placeFn(f, M))); };
+  const pair = BUTTERFLIES.find(m => m.key === 'bf_pair'), round = BUTTERFLIES.find(m => m.key === 'bf_round');
+  // 쌍나비: 꽃 한 송이를 사이에 두고 마주 앉음
+  pair.parts.push(p => band(p, bez([50, 99], [50, 90], [49, 82], [50, 74], 10), taper(2.6, 1.8)));
+  pair.parts.push(p => leaf(p, 43, 88, 12, 4.5, -2.5)); pair.parts.push(p => leaf(p, 57, 86, 12, 4.5, -0.6));
+  [0, 1, 2, 3, 4].forEach(i => pair.parts.push(p => { const a = i * TAU / 5 - Math.PI / 2; circ(p, 50 + Math.cos(a) * 4.2, 70 + Math.sin(a) * 4.2, 3.3); }));
+  pair.parts.push(p => circ(p, 50, 70, 2.2));
+  put(pair, SIDE_BF, MX(0.64, -4, 30)); put(pair, SIDE_BF, MX(0.64, 104, 30, true));
+  // 나비원문: 둥근 테 안에 범나비, 네 귀에 덩굴 말림
+  round.parts.push(RIM);
+  put(round, BUTTERFLIES[0], MX(0.72, 14, 16));
+})();
 
 const MOTIFS = [
   { key: 'free', name: '손으로', cat: 'free' },
