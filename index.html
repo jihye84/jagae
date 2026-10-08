@@ -562,32 +562,53 @@ function chordV(p, c, r, w) { const h = Math.sqrt(Math.max(0, r * r - (c - 50) *
 function chordH(p, c, r, w) { const h = Math.sqrt(Math.max(0, r * r - (c - 50) * (c - 50))); strip(p, 50 - h, c, 50 + h, c, w); }
 const RIM = p => ringP(p, 50, 50, 47, 5.5);
 
-/* ---- 학 (운학문의 나는 학, 오른쪽을 봄: 목을 앞으로 뻗고 다리는 뒤로, 두 날개를 위로 편 모습) ---- */
+/* ---- 학: 목을 S자로 뻗어 하늘로 날아오르는 운학. 날개 깃은 활 모양 뼈대를 따라 한 장씩 ---- */
+function bzPt(a, b, c, d, t) { const u = 1 - t; return [u*u*u*a[0] + 3*u*u*t*b[0] + 3*u*t*t*c[0] + t*t*t*d[0], u*u*u*a[1] + 3*u*u*t*b[1] + 3*u*t*t*c[1] + t*t*t*d[1]]; }
+function bzTan(a, b, c, d, t) { const u = 1 - t; return [3*u*u*(b[0]-a[0]) + 6*u*t*(c[0]-b[0]) + 3*t*t*(d[0]-c[0]), 3*u*u*(b[1]-a[1]) + 6*u*t*(c[1]-b[1]) + 3*t*t*(d[1]-c[1])]; }
+/* 활(arc)을 따라 깃을 n장: side=+1이면 진행 방향 오른쪽으로 뻗음, lenFn(t), tilt는 끝으로 갈수록 기울기 */
+function fanAlong(arc, n, side, lenFn, wid, tilt, bend, t0, t1) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const t = (t0 == null ? 0 : t0) + ((t1 == null ? 1 : t1) - (t0 == null ? 0 : t0)) * (n === 1 ? 0.5 : i / (n - 1));
+    const q = bzPt(arc[0], arc[1], arc[2], arc[3], t), d = bzTan(arc[0], arc[1], arc[2], arc[3], t);
+    const ang = Math.atan2(d[1], d[0]) + side * Math.PI / 2 + tilt * (t - 0.5);
+    out.push({ x: q[0], y: q[1], a: ang, L: lenFn(t), w: wid, b: bend });
+  }
+  return out;
+}
 const CRANE = { key: 'crane', name: '학', cat: 'animal', orient: true, parts: [], carve: [] };
 (function () {
   const P = CRANE.parts, C = CRANE.carve;
-  // 먼 쪽 날개 (뒤에서 위로 조금 보임)
-  P.push(p => wing(p, 45, 50, 1.02));
-  // 다리: 곧게 뒤로 뻗음
-  P.push(p => { band(p, [[40, 58], [4, 64]], () => 1.6); band(p, [[41, 60], [6, 68.5]], () => 1.6);
-                band(p, [[5, 64], [0, 61]], () => 1.2); band(p, [[5, 64], [0, 66]], () => 1.2); band(p, [[7, 68.5], [2, 71]], () => 1.2); });
-  // 꽁지깃 (짧고 검은 끝)
-  [[172, 14], [182, 15], [192, 13]].forEach(([a, L]) => P.push(p => feather(p, 33, 56, a * D2R, L, 4.8, 0)));
+  const F = f => P.push(p => feather(p, f.x, f.y, f.a, f.L, f.w, f.b));
+  // 아래(먼 쪽) 날개: 왼쪽으로 길게 펼쳐 깃이 아래로 늘어짐
+  const lowArc = [[48, 60], [38, 62], [24, 60], [10, 52]];
+  fanAlong(lowArc, 9, -1, t => 15 + t * 10, 4.6, 0.9, 0.1).reverse().forEach(F);
+  P.push(p => band(p, bez(lowArc[0], lowArc[1], lowArc[2], lowArc[3], 16), k => 7 * (1 - k * 0.55)));
+  // 다리: 뒤로 길게 뻗고 끝에 발가락
+  P.push(p => { band(p, [[60, 66], [76, 80], [90, 93]], () => 1.6); band(p, [[64, 64], [80, 76], [96, 86]], () => 1.6);
+    band(p, [[90, 93], [95, 92]], () => 1.1); band(p, [[90, 93], [94, 96]], () => 1.1); band(p, [[96, 86], [100, 84]], () => 1.1); band(p, [[96, 86], [99, 89]], () => 1.1); });
+  // 꽁지깃
+  [[38, 13], [52, 15], [66, 13]].forEach(([a, L]) => P.push(p => feather(p, 60, 65, a * D2R, L, 4.6, 0.1)));
   // 몸
-  P.push(p => { p.moveTo(30, 56); p.bezierCurveTo(34, 48, 50, 45, 63, 47); p.bezierCurveTo(70, 49, 69, 56, 61, 59); p.bezierCurveTo(50, 63, 36, 63, 30, 56); p.closePath(); });
-  // 목(앞으로 길게 뻗음)과 머리, 부리
-  P.push(p => band(p, bez([60, 51], [70, 48], [78, 42], [86, 38], 18), taper(7, 3.4)));
-  P.push(p => { ell(p, 88.5, 37, 4.2, 3.3, -0.3); p.moveTo(91.5, 35.3); p.lineTo(100, 36.4); p.lineTo(92.2, 38.6); p.closePath(); });
-  // 정수리 단정(따로 오린 작은 조각)
-  P.push(p => ell(p, 87.4, 34.2, 2.2, 1.3, -0.3));
-  // 가까운 날개 + 어깨 덮깃
-  P.push(p => wing(p, 54, 50, 1.2));
-  P.push(p => coverts(p, 54, 49, 1.0));
-  // 선각: 깃 갈래, 덮깃 비늘, 눈, 목 주름
-  C.push(p => wingCarve(p, 54, 50, 1.2));
-  C.push(p => scales(p, 51, 38, 3, 2, 2.0));
-  C.push(p => circ(p, 89.7, 36.4, 0.8));
-  C.push(p => { p.moveTo(70, 46); p.lineTo(73, 49); p.moveTo(77, 42); p.lineTo(80, 45); });
+  P.push(p => ell(p, 53, 60, 13, 7.5, 0.45));
+  // 위(가까운) 날개: 어깨에서 오른쪽 위로 활처럼 뻗은 뼈대를 따라
+  const upArc = [[59, 56], [65, 50], [71, 44], [77, 37]];
+  const turn = (arr, off) => arr.map(f => Object.assign(f, { a: f.a + off }));
+  const prim = turn(fanAlong(upArc, 11, -1, t => 24 + t * 14, 5.2, 1.5, -0.1), 0.62);
+  prim.slice().reverse().forEach(F);                                   // 첫째깃(긴 깃)
+  turn(fanAlong(upArc, 9, -1, t => 11 + t * 6, 4.6, 1.4, -0.06, 0.04, 0.96), 0.62).reverse().forEach(F);  // 덮깃 줄
+  P.push(p => band(p, bez(upArc[0], upArc[1], upArc[2], upArc[3], 16), k => 8 * (1 - k * 0.45)));  // 날개 뼈대(어깨)
+  // 목: 몸에서 왼쪽으로 휘었다가 하늘로 곧게 솟음
+  P.push(p => band(p, bez([47, 56], [33, 46], [54, 32], [57, 13], 22), taper(7.5, 3)));
+  // 머리, 긴 부리, 정수리 단정
+  P.push(p => { ell(p, 58, 11, 3.6, 2.8, -0.9); p.moveTo(59.5, 8.6); p.lineTo(68, -1); p.lineTo(61.5, 10); p.closePath(); });
+  P.push(p => ell(p, 56.8, 9, 1.8, 1.1, -0.9));
+  // 선각: 깃 줄기, 덮깃 결, 눈, 목 주름
+  prim.forEach(f => C.push(p => featherSpine(p, f.x + Math.cos(f.a) * 6, f.y + Math.sin(f.a) * 6, f.a, f.L * 0.75, f.b)));
+  fanAlong(lowArc, 9, -1, t => 15 + t * 10, 4.6, 0.9, 0.1).forEach(f => C.push(p => featherSpine(p, f.x + Math.cos(f.a) * 4, f.y + Math.sin(f.a) * 4, f.a, f.L * 0.7, f.b)));
+  C.push(p => { const pts = bez(upArc[0], upArc[1], upArc[2], upArc[3], 8); for (let i = 1; i < pts.length - 1; i++) { p.moveTo(pts[i][0] - 1.6, pts[i][1] - 1); p.lineTo(pts[i][0] + 1.6, pts[i][1] + 1); } });
+  C.push(p => circ(p, 58.6, 10.4, 0.7));
+  C.push(p => { p.moveTo(42, 46); p.lineTo(45, 48); p.moveTo(48, 36); p.lineTo(51, 37); });
 })();
 
 /* ---- 봉황 (오른쪽을 보고 날며 긴 꼬리깃을 휘날림) ---- */
