@@ -735,6 +735,84 @@ const IRWOL = { key: 'irwol', name: '일월오봉도', cat: 'land', parts: [], c
   P.push(p => circ(p, 71, 26, 4.4));   // 해
 })();
 
+/* ---- 나비문: 오른쪽 반쪽을 그리고 좌우로 뒤집어 붙임. holes는 자개를 비워 옻칠이 드러나는 자리 ---- */
+const MIR = new DOMMatrix([-1, 0, 0, 1, 100, 0]);
+const sym = fs => fs.flatMap(f => [f, placeFn(f, MIR)]);
+const bfBody = (top, len) => [
+  p => { ell(p, 50, top + len / 2, 2.9, len / 2, 0); circ(p, 50, top - 3, 3.2); },
+];
+const bfAntenna = (x1, y1, cx, cy, r, d) => p => band(p, bez([51.2, 26], [53, 20], [x1 - 4, y1 + 3], [x1, y1], 10).concat(curlPts(cx, cy, r, r * 0.25, Math.atan2(y1 - cy, x1 - cx), 0.9, d, 10).slice(1)), k => 1.4 * (1 - k * 0.3) + 0.3);
+function scallop(p, pts, depth) {          // 점들을 잇는 물결 가장자리
+  for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+    p.quadraticCurveTo(mx - dy / L * depth, my + dx / L * depth, b[0], b[1]); }
+}
+const BUTTERFLIES = [
+  { key: 'butterfly', name: '범나비', cat: 'animal', orient: true, parts: [
+      ...sym([
+        // 뒷날개 (꼬리가 달림)
+        p => { p.moveTo(52, 53); p.bezierCurveTo(64, 50, 82, 52, 86, 60); p.bezierCurveTo(88, 68, 80, 74, 74, 76); p.bezierCurveTo(72, 84, 70, 90, 66, 94); p.bezierCurveTo(62, 88, 60, 80, 56, 74); p.bezierCurveTo(53, 68, 52, 60, 52, 53); p.closePath(); },
+        // 앞날개 (가장자리가 물결)
+        p => { p.moveTo(52, 44); p.bezierCurveTo(60, 30, 80, 22, 96, 28); scallop(p, [[96, 28], [94, 36], [92, 43], [87, 50]], 1.6); p.bezierCurveTo(76, 53, 62, 52, 52, 50); p.closePath(); },
+        // 날개 안쪽 무늬 조각
+        p => leaf(p, 72, 38, 30, 9, -0.3),
+        p => { ell(p, 70, 64, 8, 5.5, 0.5); },
+        p => { circ(p, 87, 33, 2.6); circ(p, 82, 44, 2.2); },
+        bfAntenna(62, 14, 64, 17, 3, 1)
+      ]),
+      ...bfBody(32, 30)
+    ], holes: sym([p => ell(p, 70, 64, 3.6, 2.4, 0.5), p => circ(p, 73, 40, 1.8)]), carve: [
+      ...sym([p => { p.moveTo(53, 46); p.lineTo(90, 31); p.moveTo(53, 48); p.lineTo(86, 46); p.moveTo(54, 58); p.lineTo(80, 58); p.moveTo(54, 62); p.lineTo(66, 88); }]),
+      p => { for (let y = 38; y < 60; y += 3.5) { p.moveTo(47.6, y); p.lineTo(52.4, y); } }
+    ] },
+  { key: 'bf_flower', name: '꽃나비', cat: 'animal', orient: true, parts: [
+      ...sym([
+        p => { p.moveTo(52, 53); p.bezierCurveTo(62, 52, 76, 54, 78, 64); p.bezierCurveTo(80, 74, 72, 84, 64, 86); p.bezierCurveTo(58, 86, 54, 76, 52, 60); p.closePath(); },
+        p => { p.moveTo(52, 46); p.bezierCurveTo(58, 32, 76, 22, 92, 24); p.bezierCurveTo(98, 30, 96, 42, 88, 48); p.bezierCurveTo(78, 54, 62, 54, 52, 50); p.closePath(); },
+        ...[0, 1, 2, 3, 4].map(i => p => { const a = i * TAU / 5 - Math.PI / 2; circ(p, 75 + Math.cos(a) * 4.6, 38 + Math.sin(a) * 4.6, 3.4); }),
+        p => circ(p, 75, 38, 2.4),
+        ...[0, 1, 2, 3, 4].map(i => p => { const a = i * TAU / 5 - Math.PI / 2; circ(p, 66 + Math.cos(a) * 3.4, 69 + Math.sin(a) * 3.4, 2.5); }),
+        p => circ(p, 66, 69, 1.8),
+        p => leaf(p, 62, 44, 12, 4, -0.35),
+        bfAntenna(60, 15, 62, 18, 2.8, 1)
+      ]),
+      ...bfBody(34, 28)
+    ], holes: sym([
+      p => { [[60, 33], [67, 28], [76, 25.5], [85, 26], [92, 30], [93, 38], [89, 44], [81, 49]].forEach(([x, y]) => circ(p, x, y, 1.1)); },
+      p => { [[60, 55], [69, 57], [75, 63], [76, 71], [72, 78], [65, 82]].forEach(([x, y]) => circ(p, x, y, 1)); }
+    ]), carve: [p => { for (let y = 40; y < 60; y += 3.2) { p.moveTo(47.6, y); p.lineTo(52.4, y); } }] },
+  { key: 'bf_dot', name: '점나비', cat: 'animal', orient: true, parts: [
+      ...sym([
+        p => { p.moveTo(52, 54); p.bezierCurveTo(66, 52, 86, 54, 88, 64); p.bezierCurveTo(90, 76, 82, 84, 70, 84); p.bezierCurveTo(60, 84, 54, 76, 52, 62); p.closePath(); },
+        p => { p.moveTo(52, 50); p.bezierCurveTo(54, 34, 66, 24, 84, 24); p.bezierCurveTo(96, 24, 98, 36, 94, 44); p.bezierCurveTo(88, 52, 70, 54, 52, 52); p.closePath(); },
+        p => { p.moveTo(56, 48); p.bezierCurveTo(60, 36, 70, 30, 82, 30); }
+      ]),
+      p => ell(p, 50, 50, 3.6, 22, 0)
+    ], holes: sym([p => { circ(p, 86, 33, 3); circ(p, 76, 38, 2); circ(p, 90, 42, 1.8); circ(p, 64, 40, 1.6); circ(p, 76, 72, 4.6); circ(p, 64, 74, 2); circ(p, 84, 64, 1.8); }]),
+    carve: sym([p => { circ(p, 86, 33, 4.6); circ(p, 76, 72, 6.4); p.moveTo(54, 58); p.bezierCurveTo(64, 58, 74, 60, 82, 66); }]) },
+  { key: 'bf_tail', name: '긴꼬리나비', cat: 'animal', orient: true, parts: [
+      ...sym([
+        p => { p.moveTo(52, 54); p.bezierCurveTo(60, 52, 70, 54, 72, 60); p.bezierCurveTo(74, 66, 68, 70, 64, 72); p.bezierCurveTo(62, 80, 66, 88, 70, 96); p.lineTo(68, 97); p.bezierCurveTo(60, 88, 56, 78, 55, 70); p.bezierCurveTo(52, 64, 52, 58, 52, 54); p.closePath(); },
+        p => { p.moveTo(52, 46); p.bezierCurveTo(60, 28, 80, 22, 97, 26); p.bezierCurveTo(96, 36, 90, 46, 80, 50); p.bezierCurveTo(70, 54, 60, 54, 52, 50); p.closePath(); },
+        p => { p.moveTo(57, 46); p.bezierCurveTo(63, 34, 78, 30, 90, 31); p.bezierCurveTo(88, 38, 82, 44, 74, 47); p.bezierCurveTo(68, 49, 62, 49, 57, 48); p.closePath(); },
+        p => circ(p, 64, 64, 4),
+        p => band(p, [[51, 26], [53, 14], [55, 3]], () => 1.1)
+      ]),
+      ...bfBody(32, 30)
+    ], holes: sym([p => circ(p, 64, 64, 1.8), p => { circ(p, 86, 36, 1.4); circ(p, 80, 41, 1.2); }]),
+    carve: sym([p => { p.moveTo(54, 49); p.lineTo(74, 47); p.moveTo(54, 58); p.lineTo(68, 60); }]) },
+  { key: 'bf_side', name: '앉은나비', cat: 'animal', orient: true, parts: [
+      // 옆에서 본 앉은 나비: 날개를 위로 접고 있음
+      p => { p.moveTo(44, 62); p.bezierCurveTo(30, 66, 16, 70, 10, 66); p.bezierCurveTo(18, 60, 30, 56, 44, 58); p.closePath(); },
+      p => { p.moveTo(46, 60); p.bezierCurveTo(40, 72, 38, 86, 42, 96); p.bezierCurveTo(50, 92, 54, 80, 52, 64); p.closePath(); },
+      p => { p.moveTo(48, 56); p.bezierCurveTo(52, 38, 62, 18, 80, 6); p.bezierCurveTo(82, 18, 76, 40, 54, 60); p.closePath(); },
+      p => { p.moveTo(46, 56); p.bezierCurveTo(46, 40, 50, 24, 58, 12); p.bezierCurveTo(62, 26, 58, 44, 50, 58); p.closePath(); },
+      p => { p.moveTo(42, 58); p.bezierCurveTo(30, 52, 22, 44, 24, 34); p.bezierCurveTo(34, 40, 42, 48, 46, 56); p.closePath(); },
+      p => { ell(p, 50, 62, 3, 9, -0.5); circ(p, 55, 54, 2.6); },
+      p => { band(p, bez([56, 52], [62, 46], [66, 42], [72, 40], 8), () => 1.1); band(p, bez([56, 53], [63, 50], [68, 49], [74, 48], 8), () => 1.1); }
+    ], holes: [p => { leaf(p, 66, 26, 18, 4, -0.95); }, p => leaf(p, 52, 38, 14, 3, -1.35)],
+    carve: [p => { p.moveTo(50, 58); p.lineTo(76, 12); p.moveTo(48, 58); p.lineTo(28, 38); p.moveTo(46, 62); p.lineTo(16, 66); p.moveTo(48, 64); p.lineTo(45, 90); }] }
+];
+
 const MOTIFS = [
   { key: 'free', name: '손으로', cat: 'free' },
   { key: 'sun', name: '해', cat: 'sky', parts: [p => circ(p, 50, 50, 44)], carve: [p => { circ(p, 50, 50, 36); }] },
@@ -919,18 +997,7 @@ const MOTIFS = [
       p => { p.moveTo(32, 92); p.bezierCurveTo(36, 89, 40, 89, 44, 91); p.moveTo(60, 90); p.bezierCurveTo(64, 87, 70, 88, 72, 92); }
     ] },
   CRANE,
-  { key: 'butterfly', name: '나비', cat: 'animal', orient: true, parts: [
-      p => { p.moveTo(48, 46); p.bezierCurveTo(40, 20, 16, 8, 6, 18); p.bezierCurveTo(2, 30, 14, 44, 46, 50); p.closePath(); },
-      p => { p.moveTo(52, 46); p.bezierCurveTo(60, 20, 84, 8, 94, 18); p.bezierCurveTo(98, 30, 86, 44, 54, 50); p.closePath(); },
-      p => { p.moveTo(47, 53); p.bezierCurveTo(20, 52, 10, 70, 20, 82); p.bezierCurveTo(30, 90, 42, 76, 48, 56); p.closePath(); },
-      p => { p.moveTo(53, 53); p.bezierCurveTo(80, 52, 90, 70, 80, 82); p.bezierCurveTo(70, 90, 58, 76, 52, 56); p.closePath(); },
-      p => { ell(p, 14, 24, 5, 3.5, -0.6); ell(p, 86, 24, 5, 3.5, 0.6); },
-      p => ell(p, 50, 52, 3.2, 19, 0),
-      p => { band(p, bez([49, 35], [46, 24], [40, 17], [33, 14], 12), () => 1.2); band(p, bez([51, 35], [54, 24], [60, 17], [67, 14], 12), () => 1.2); circ(p, 33, 14, 1.8); circ(p, 67, 14, 1.8); }
-    ], carve: [
-      p => line(p, [46, 47, 20, 22]), p => line(p, [46, 48, 10, 33]), p => line(p, [54, 47, 80, 22]), p => line(p, [54, 48, 90, 33]),
-      p => line(p, [47, 56, 22, 77]), p => line(p, [53, 56, 78, 77]), p => line(p, [47, 58, 32, 84]), p => line(p, [53, 58, 68, 84])
-    ] },
+  ...BUTTERFLIES,
   { key: 'turtle', name: '거북', cat: 'animal', orient: true, parts: [
       // 뒷지느러미와 꼬리
       p => { p.moveTo(17, 63); p.bezierCurveTo(10, 64, 5, 68, 2, 75); p.bezierCurveTo(9, 76, 15, 72, 20, 67); p.closePath(); },
