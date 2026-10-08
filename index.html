@@ -691,15 +691,24 @@ const MOTIFS = [
       p => { p.moveTo(12, 84); p.lineTo(16, 80); p.moveTo(24, 62); p.lineTo(28, 58); p.moveTo(64, 38); p.lineTo(68, 35); }
     ] },
   { key: 'mushroom', name: '불로초', parts: [
-      p => band(p, bez([52, 50], [50, 66], [40, 78], [42, 96], 16), taper(9, 7)),
-      p => band(p, bez([47, 70], [36, 66], [28, 64], [22, 60], 12), taper(4.5, 3)),
-      p => { p.moveTo(6, 60); p.bezierCurveTo(4, 46, 16, 40, 24, 44); p.bezierCurveTo(34, 40, 40, 50, 34, 58); p.bezierCurveTo(28, 64, 12, 66, 6, 60); p.closePath(); },
-      p => { p.moveTo(14, 44); p.bezierCurveTo(12, 18, 42, 8, 58, 14); p.bezierCurveTo(84, 6, 100, 24, 92, 44); p.bezierCurveTo(86, 56, 66, 52, 54, 50); p.bezierCurveTo(40, 54, 18, 58, 14, 44); p.closePath(); }
+      // 바위 언덕과 풀
+      p => { p.moveTo(18, 98); p.bezierCurveTo(22, 88, 34, 84, 46, 87); p.bezierCurveTo(56, 82, 74, 84, 82, 98); p.closePath(); },
+      p => leaf(p, 22, 88, 20, 4.5, -2.3), p => leaf(p, 80, 89, 18, 4.2, -0.75),
+      // 줄기 세 가닥 (한 뿌리에서 갈라져 휘어 오름)
+      p => { const t = capAt(62, 30, 30, 21, -0.12); band(p, bez([50, 88], [50, 70], [60, 54], t, 18), taper(6, 4)); },
+      p => { const t = capAt(25, 45, 20, 14, -0.38); band(p, bez([47, 88], [42, 72], [30, 64], t, 16), taper(4.8, 3)); },
+      p => { const t = capAt(78, 66, 13, 9.5, 0.3); band(p, bez([53, 88], [62, 84], [70, 80], t, 12), taper(3.8, 2.4)); },
+      // 갓: 바깥 갓 + 안쪽 고리(따로 오린 조각)
+      p => capShape(p, 25, 45, 20, 14, -0.38, 1), p => capShape(p, 25, 45, 20, 14, -0.38, 0.56),
+      p => capShape(p, 78, 66, 13, 9.5, 0.3, 1),
+      p => capShape(p, 62, 30, 30, 21, -0.12, 1), p => capShape(p, 62, 30, 30, 21, -0.12, 0.58)
     ], carve: [
-      p => { p.moveTo(22, 42); p.bezierCurveTo(24, 26, 44, 18, 57, 23); p.bezierCurveTo(72, 16, 88, 26, 84, 42); },
-      p => { p.moveTo(31, 42); p.bezierCurveTo(33, 32, 46, 28, 57, 31); p.bezierCurveTo(66, 27, 76, 32, 75, 42); },
-      p => { p.moveTo(41, 42); p.bezierCurveTo(44, 37, 52, 36, 57, 38); p.bezierCurveTo(62, 36, 66, 38, 66, 42); },
-      p => { p.moveTo(11, 56); p.bezierCurveTo(12, 48, 20, 46, 24, 49); p.bezierCurveTo(30, 46, 34, 52, 31, 56); }
+      // 갓의 나이테 고리와 가장자리 결
+      p => { capShape(p, 62, 30, 30, 21, -0.12, 0.82, true); capShape(p, 62, 30, 30, 21, -0.12, 0.34, true); capRays(p, 62, 30, 30, 21, -0.12); },
+      p => { capShape(p, 25, 45, 20, 14, -0.38, 0.8, true); capShape(p, 25, 45, 20, 14, -0.38, 0.32, true); capRays(p, 25, 45, 20, 14, -0.38); },
+      p => { capShape(p, 78, 66, 13, 9.5, 0.3, 0.62, true); },
+      // 바위 주름
+      p => { p.moveTo(32, 92); p.bezierCurveTo(36, 89, 40, 89, 44, 91); p.moveTo(60, 90); p.bezierCurveTo(64, 87, 70, 88, 72, 92); }
     ] },
   CRANE,
   { key: 'butterfly', name: '나비', orient: true, parts: [
@@ -738,6 +747,30 @@ function plumStamens(p, cx, cy, r) {
   const rot = (cx * 7 + cy * 3) % 72 * D2R;
   for (let i = 0; i < 10; i++) { const a = rot + i * TAU / 10; p.moveTo(cx, cy); p.lineTo(cx + Math.cos(a) * r * 0.42, cy + Math.sin(a) * r * 0.42); p.moveTo(cx + Math.cos(a) * r * 0.5, cy + Math.sin(a) * r * 0.5); p.arc(cx + Math.cos(a) * r * 0.46, cy + Math.sin(a) * r * 0.46, r * 0.045, 0, TAU); }
   for (let i = 0; i < 5; i++) { const a = rot + i * TAU / 5 - Math.PI / 2; p.moveTo(cx + Math.cos(a) * r * 0.62, cy + Math.sin(a) * r * 0.62); p.lineTo(cx + Math.cos(a) * r * 0.9, cy + Math.sin(a) * r * 0.9); }
+}
+/* 영지 갓: 가운데 위가 살짝 들어간 콩팥 모양, 아래 가운데에 줄기 자리. k로 안쪽 고리 크기 */
+const CAP = [[-1, 0.1], [-1.05, -0.55, -0.55, -1.0, -0.05, -0.8], [0.45, -1.05, 1.05, -0.7, 1.0, -0.05], [0.98, 0.32, 0.55, 0.46, 0.17, 0.32], [0.03, 0.23, -0.03, 0.23, -0.17, 0.33], [-0.6, 0.5, -0.98, 0.4, -1, 0.1]];
+function capT(cx, cy, w, h, rot, k) {
+  const c = Math.cos(rot), s = Math.sin(rot);
+  return (x, y) => { const X = x * k * w, Y = (0.3 + (y - 0.3) * k) * h; return [cx + X * c - Y * s, cy + X * s + Y * c]; };
+}
+function capShape(p, cx, cy, w, h, rot, k, open) {
+  const T = capT(cx, cy, w, h, rot, k);
+  const s0 = T(CAP[0][0], CAP[0][1]); p.moveTo(s0[0], s0[1]);
+  for (let i = 1; i < CAP.length; i++) {
+    if (open && i >= 3) break;          // 선각 고리는 위쪽 테두리만
+    const q = CAP[i], a = T(q[0], q[1]), b = T(q[2], q[3]), d = T(q[4], q[5]);
+    p.bezierCurveTo(a[0], a[1], b[0], b[1], d[0], d[1]);
+  }
+  if (!open) p.closePath();
+}
+function capAt(cx, cy, w, h, rot) { return capT(cx, cy, w, h, rot, 1)(0, 0.28); }
+function capRays(p, cx, cy, w, h, rot) {
+  const T1 = capT(cx, cy, w, h, rot, 0.95), T2 = capT(cx, cy, w, h, rot, 0.86);
+  for (let i = 0; i < 9; i++) {
+    const a = Math.PI * (1.08 + i * 0.105), x = Math.cos(a), y = Math.sin(a) * 0.85;
+    const q1 = T1(x, y), q2 = T2(x, y); p.moveTo(q1[0], q1[1]); p.lineTo(q2[0], q2[1]);
+  }
 }
 function lotusPetal(p, a, L, w) { leaf(p, 50 + Math.cos(a) * L / 2, 82 + Math.sin(a) * L / 2, L, w, a); }
 
