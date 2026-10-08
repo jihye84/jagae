@@ -169,6 +169,11 @@ body {
   #shapes .tile span { font-size: clamp(11px, 1.3vh, 14px); }
   #shapes .tabs button { font-size: clamp(13px, 1.4vh, 16px); }
 }
+#reach {
+  position: fixed; left: 0; top: 0; pointer-events: none; border-radius: 50%;
+  border: 2px dashed rgba(232, 224, 234, .9); background: rgba(232, 224, 234, .08);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+}
 #ov { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #nogl {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
@@ -211,6 +216,7 @@ body {
 
 <canvas id="gl" aria-label="옻칠 그림판"></canvas>
 <canvas id="ov" aria-hidden="true"></canvas>
+<div id="reach" aria-hidden="true" hidden></div>
 <div id="shapes" role="group" aria-label="오릴 무늬" hidden></div>
 <header class="brand"><h1>자개 붓</h1><span>검은 옻칠 위 나전</span></header>
 <div id="hint">손가락이나 마우스로 칠해 보세요</div>
@@ -903,6 +909,15 @@ const MOTIFS = [
       p => { p.moveTo(4, 50); p.arc(50, 50, 46, Math.PI, Math.PI * 2, false); p.arc(73, 50, 23, 0, Math.PI, false); p.arc(27, 50, 23, 0, Math.PI, true); p.closePath(); },
       p => { p.moveTo(4, 50); p.arc(50, 50, 46, Math.PI, 0, true); p.arc(73, 50, 23, 0, Math.PI, false); p.arc(27, 50, 23, 0, Math.PI, true); p.closePath(); }
     ], carve: [] },
+  { key: 'b_noe', name: '번개띠', cat: 'border', band: { rails: [0.88], unit: [[[0.68, 0.88], [0.68, 0.12], [0.1, 0.12], [0.1, 0.6], [0.42, 0.6], [0.42, 0.38]]] } },
+  { key: 'b_hoe', name: '回자띠', cat: 'border', band: { unit: [[[0.12, 0.12], [0.88, 0.12], [0.88, 0.88], [0.28, 0.88], [0.28, 0.34], [0.68, 0.34], [0.68, 0.66], [0.48, 0.66]]] } },
+  { key: 'b_gong', name: '工자띠', cat: 'border', band: { rails: [0.5], unit: [
+      [[0.5, 0.1], [0.5, 0.9]], [[0.3, 0.1], [0.7, 0.1]], [[0.3, 0.9], [0.7, 0.9]], [[0, 0.28], [0, 0.72]]] } },
+  { key: 'b_chang', name: '창살띠', cat: 'border', band: { rails: [0.3, 0.7], unit: [[[0.5, -0.18], [0.5, 1.18]], [[0, 0.3], [0, 0.7]]] } },
+  { key: 'b_dangcho', name: '당초띠', cat: 'border', band: { unit: [
+      { smooth: true, pts: Array.from({ length: 21 }, (_, i) => [i / 20, 0.5 - 0.3 * Math.sin(i / 20 * TAU)]) },
+      { smooth: true, pts: curlPts(0.34, 0.44, 0.2, 0.04, Math.PI * 0.95, 1.05, 1, 18) },
+      { smooth: true, pts: curlPts(0.84, 0.56, 0.2, 0.04, -Math.PI * 0.05, 1.05, 1, 18) }] } },
   PHOENIX
 ];
 function plumFlower(cx, cy, r) {
@@ -939,6 +954,44 @@ function capRays(p, cx, cy, w, h, rot) {
   }
 }
 function lotusPetal(p, a, L, w) { leaf(p, 50 + Math.cos(a) * L / 2, 82 + Math.sin(a) * L / 2, L, w, a); }
+
+/* 띠 무늬: 끈 선을 따라 한 칸 무늬를 이어 붙인다. 위아래 테두리 + 칸마다 끊음질 띠 */
+function bandPieces(m, L, H) {
+  const n = Math.max(1, Math.round(L / (H * 0.8))), U = L / n, w = H * 0.085, t = H * 0.1;
+  const X = (i, x) => (i + x) * U, Y = y => (-0.32 + 0.64 * y) * H;
+  const pieces = [];
+  pieces.push(p => strip(p, 0, -H * 0.42, L, -H * 0.42, t));
+  pieces.push(p => strip(p, 0, H * 0.42, L, H * 0.42, t));
+  (m.band.rails || []).forEach(y => pieces.push(p => strip(p, 0, Y(y), L, Y(y), w)));
+  m.band.unit.forEach(pl => {
+    for (let i = 0; i < n; i++) {
+      if (pl.smooth) pieces.push(p => band(p, pl.pts.map(([x, y]) => [X(i, x), Y(y)]), () => w));
+      else for (let k = 0; k < pl.length - 1; k++) { const a = pl[k], b = pl[k + 1]; pieces.push(p => strip(p, X(i, a[0]), Y(a[1]), X(i, b[0]), Y(b[1]), w)); }
+    }
+  });
+  return pieces;
+}
+function bandGeom() {
+  const a = st.start, b = st.cur || st.start, H = Math.max(30 * DPR, st.s * 1.5);
+  const d = Math.hypot(b.x - a.x, b.y - a.y);
+  if (d < 10 * DPR) { const L = H * 0.8 * 6; return { A: { x: a.x - L / 2, y: a.y }, L, ang: 0, H }; }
+  return { A: a, L: d, ang: Math.atan2(b.y - a.y, b.x - a.x), H };
+}
+function stampBand(m, g, B, preview) {
+  const c = preview ? ox : dx;
+  c.save(); c.translate(g.A.x, g.A.y); c.rotate(g.ang);
+  const base = Math.random();
+  bandPieces(m, g.L, g.H).forEach(f => {
+    const pth = new Path2D(); f(pth);
+    if (preview) { c.fillStyle = 'rgba(232,224,234,.35)'; c.fill(pth); }
+    else {
+      c.lineJoin = 'round'; c.lineWidth = Math.max(2, 2.2 * DPR); c.strokeStyle = 'rgb(0,0,' + B + ')'; c.stroke(pth);
+      c.fillStyle = fillFor(base + R(-0.1, 0.1), B, 255); c.fill(pth);
+    }
+  });
+  if (preview) ovDirty = true;
+  c.restore();
+}
 
 /* 무늬 하나를 찍는다: 조각마다 따로 오린 자개(결이 조금씩 다름) + 선각 */
 function stampMotif(m, cx, cy, D, flip, B, preview, rot) {
@@ -1163,7 +1216,7 @@ function add(x, y, wf) {
   if (st.tool === 'lasso' && st.motif) {
     if (!st.start) st.start = p;
     st.cur = p; st.last = p;
-    if (!st.silent) { clearOverlay(); const g = motifGeom(); stampMotif(MOTIF_BY[st.motif], st.start.x, st.start.y, g.D, g.flip, st.B, true, g.rot); }
+    if (!st.silent) { clearOverlay(); const mm = MOTIF_BY[st.motif]; if (mm.band) stampBand(mm, bandGeom(), st.B, true); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, true, g.rot); } }
     return;
   }
   if (st.tool === 'lasso') {
@@ -1325,7 +1378,7 @@ function tapDisc() {
 }
 function end() {
   if (st && st.last && st.len < 4 * DPR && (st.tool === 'slab' || st.tool === 'shard')) tapDisc();
-  if (st && st.tool === 'lasso' && st.motif && st.start) { const g = motifGeom(); stampMotif(MOTIF_BY[st.motif], st.start.x, st.start.y, g.D, g.flip, st.B, false, g.rot); clearOverlay(); }
+  if (st && st.tool === 'lasso' && st.motif && st.start) { const mm = MOTIF_BY[st.motif]; if (mm.band) stampBand(mm, bandGeom(), st.B, false); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, false, g.rot); } clearOverlay(); }
   else if (st && st.tool === 'lasso') { slab(st.silent ? st.pts : tidyLoop(st.pts), st.B, st.ph); clearOverlay(); }
   if (st && st.tool === 'strip' && st.inStrip && st.last && st.stripStart) drawStrip(st.stripStart, st.last);
   if (st && st.tool === 'slab') slabSeams();
@@ -1379,7 +1432,20 @@ glCanvas.addEventListener('pointerdown', e => {
   add(e.clientX * DPR, e.clientY * DPR, 1);
   setLightFromPointer(e.clientX, e.clientY);
 });
+/* 부스러기 범위: 마우스를 올리거나 칠하는 동안 흩뿌려질 둥근 범위를 점선으로 보여 준다 */
+const reach = document.getElementById('reach');
+function showReach(e) {
+  if (state.tool !== 'flake' || (e.pointerType !== 'mouse' && !drawing)) { reach.hidden = true; return; }
+  const r = sizeNow() * 0.75;
+  reach.style.width = reach.style.height = (2 * r) + 'px';
+  reach.style.transform = 'translate(' + (e.clientX - r) + 'px,' + (e.clientY - r) + 'px)';
+  reach.hidden = false;
+}
+glCanvas.addEventListener('pointerleave', () => { if (!drawing) reach.hidden = true; });
+glCanvas.addEventListener('pointerdown', showReach);
+glCanvas.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') reach.hidden = true; });
 glCanvas.addEventListener('pointermove', e => {
+  showReach(e);
   setLightFromPointer(e.clientX, e.clientY);
   if (!drawing) return;
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
@@ -1400,7 +1466,7 @@ function choose(attr, val) {
 }
 bar.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.tool) { state.tool = b.dataset.tool; choose('tool', b.dataset.tool); showShapes(); }
+  if (b.dataset.tool) { state.tool = b.dataset.tool; choose('tool', b.dataset.tool); showShapes(); if (state.tool !== 'flake') reach.hidden = true; }
   else if (b.dataset.shell) { state.shell = +b.dataset.shell; choose('shell', b.dataset.shell); if (!shapesEl.hidden) renderShapes(); }
   else if (b.dataset.size) { state.sizeKey = b.dataset.size; choose('size', b.dataset.size); }
 });
@@ -1571,7 +1637,7 @@ window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() =
 /* 오릴 무늬 고르기 */
 const MOTIF_BY = {}; MOTIFS.forEach(m => { MOTIF_BY[m.key] = m; });
 const shapesEl = document.getElementById('shapes');
-const CATS = [['sky', '하늘'], ['land', '산수'], ['plant', '꽃·나무'], ['animal', '새·짐승'], ['pattern', '문양'], ['free', '손으로']];
+const CATS = [['sky', '하늘'], ['land', '산수'], ['plant', '꽃·나무'], ['animal', '새·짐승'], ['pattern', '문양'], ['border', '띠'], ['free', '손으로']];
 const ICON_PAL = {
   0: ['#1f7f8a', '#3a5cb0', '#6e48a6', '#2a9a72', '#44a8b8'],
   128: ['#f2e8ee', '#ddd9f0', '#f4e2d6', '#d9ebe4', '#eadff2'],
@@ -1589,6 +1655,15 @@ CATS.forEach(([k, name]) => {
 function drawIcon(cv, m) {
   const c = cv.getContext('2d'), S = cv.width, pal = ICON_PAL[state.shell] || ICON_PAL[0];
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, S, S);
+  if (m.band) {
+    c.scale(S / 100, S / 100); c.translate(2, 50);
+    bandPieces(m, 96, 34).forEach((f, k) => {
+      const p = new Path2D(); f(p);
+      c.lineJoin = 'round'; c.lineWidth = 2; c.strokeStyle = '#100b09'; c.stroke(p);
+      c.fillStyle = pal[k % 5]; c.fill(p);
+    });
+    return;
+  }
   if (!m.parts) {
     c.setLineDash([S * 0.07, S * 0.06]); c.lineWidth = S * 0.045; c.strokeStyle = pal[0]; c.lineCap = 'round';
     c.beginPath(); c.moveTo(S * .25, S * .72); c.bezierCurveTo(S * .05, S * .36, S * .36, S * .1, S * .62, S * .2);
