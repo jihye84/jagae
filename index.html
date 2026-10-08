@@ -946,6 +946,33 @@ const MOTIFS = [
       p => { p.moveTo(4, 50); p.arc(50, 50, 46, Math.PI, Math.PI * 2, false); p.arc(73, 50, 23, 0, Math.PI, false); p.arc(27, 50, 23, 0, Math.PI, true); p.closePath(); },
       p => { p.moveTo(4, 50); p.arc(50, 50, 46, Math.PI, 0, true); p.arc(73, 50, 23, 0, Math.PI, false); p.arc(27, 50, 23, 0, Math.PI, true); p.closePath(); }
     ], carve: [] },
+  { key: 'c_su', name: '둥근 수(壽)', cat: 'letter', parts: [
+      ...[[32, 24, 68, 24], [22, 36, 78, 36], [18, 50, 82, 50], [22, 64, 78, 64], [32, 76, 68, 76],
+        [50, 14, 50, 86], [30, 36, 30, 50], [70, 36, 70, 50], [36, 64, 36, 76], [64, 64, 64, 76],
+        [30, 50, 30, 57], [30, 57, 40, 57], [70, 50, 70, 57], [70, 57, 60, 57]].map(q => p => strip(p, q[0], q[1], q[2], q[3], 3.8)), RIM
+    ], carve: [] },
+  { key: 'c_su2', name: '모난 수(壽)', cat: 'letter', parts: [
+      ...[[32, 24, 68, 24], [22, 36, 78, 36], [18, 50, 82, 50], [22, 64, 78, 64], [32, 76, 68, 76],
+        [50, 14, 50, 86], [30, 36, 30, 50], [70, 36, 70, 50], [36, 64, 36, 76], [64, 64, 64, 76],
+        [30, 50, 30, 57], [30, 57, 40, 57], [70, 50, 70, 57], [70, 57, 60, 57]].map(q => p => strip(p, q[0], q[1], q[2], q[3], 3.8)),
+      p => polyRing(p, 50, 50, 50 * Math.SQRT2 - 3, 5, 4, Math.PI / 4), p => polyRing(p, 50, 50, 50 * Math.SQRT2 - 10, 2.2, 4, Math.PI / 4)
+    ], carve: [] },
+  { key: 'c_bok', name: '복(福)', cat: 'letter', parts: [
+      // 示(礻) 변
+      p => strip(p, 26, 14, 26, 22, 4), p => strip(p, 14, 30, 36, 30, 4), p => strip(p, 34, 30, 16, 56, 4), p => strip(p, 26, 42, 26, 88, 4), p => strip(p, 28, 50, 36, 58, 4),
+      // 畐: 一, 口, 田
+      p => strip(p, 46, 14, 88, 14, 4), p => strip(p, 52, 23, 82, 23, 4), p => strip(p, 52, 23, 52, 37, 4), p => strip(p, 82, 23, 82, 37, 4), p => strip(p, 52, 37, 82, 37, 4),
+      p => strip(p, 48, 46, 86, 46, 4), p => strip(p, 48, 46, 48, 88, 4), p => strip(p, 86, 46, 86, 88, 4), p => strip(p, 48, 88, 86, 88, 4),
+      p => strip(p, 67, 46, 67, 88, 4), p => strip(p, 48, 67, 86, 67, 4)
+    ], carve: [] },
+  { key: 'c_hui', name: '쌍희(囍)', cat: 'letter', parts: [
+      ...[28, 72].flatMap(c => [
+        [c - 18, 10, c + 18, 10], [c, 10, c, 26], [c - 12, 22, c + 12, 22],
+        [c - 11, 31, c + 11, 31], [c - 11, 31, c - 11, 43], [c + 11, 31, c + 11, 43], [c - 11, 43, c + 11, 43],
+        [c - 9, 48, c - 6, 53], [c + 9, 48, c + 6, 53], [c - 19, 57, c + 19, 57],
+        [c - 13, 63, c + 13, 63], [c - 13, 63, c - 13, 89], [c + 13, 63, c + 13, 89], [c - 13, 89, c + 13, 89]
+      ].map(q => p => strip(p, q[0], q[1], q[2], q[3], 3.6)))
+    ], carve: [] },
   { key: 'b_noe', name: '번개띠', cat: 'border', band: { rails: [0.88], unit: [[[0.68, 0.88], [0.68, 0.12], [0.1, 0.12], [0.1, 0.6], [0.42, 0.6], [0.42, 0.38]]] } },
   { key: 'b_hoe', name: '回자띠', cat: 'border', band: { unit: [[[0.12, 0.12], [0.88, 0.12], [0.88, 0.88], [0.28, 0.88], [0.28, 0.34], [0.68, 0.34], [0.68, 0.66], [0.48, 0.66]]] } },
   { key: 'b_gong', name: '工자띠', cat: 'border', band: { rails: [0.5], unit: [
@@ -1674,7 +1701,7 @@ window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() =
 /* 오릴 무늬 고르기 */
 const MOTIF_BY = {}; MOTIFS.forEach(m => { MOTIF_BY[m.key] = m; });
 const shapesEl = document.getElementById('shapes');
-const CATS = [['sky', '하늘'], ['land', '산수'], ['plant', '꽃·나무'], ['animal', '새·짐승'], ['pattern', '문양'], ['border', '띠'], ['free', '손으로']];
+const CATS = [['sky', '하늘'], ['land', '산수'], ['plant', '꽃·나무'], ['animal', '새·짐승'], ['pattern', '문양'], ['letter', '글자'], ['border', '띠'], ['free', '손으로']];
 const ICON_PAL = {
   0: ['#1f7f8a', '#3a5cb0', '#6e48a6', '#2a9a72', '#44a8b8'],
   128: ['#f2e8ee', '#ddd9f0', '#f4e2d6', '#d9ebe4', '#eadff2'],
