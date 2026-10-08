@@ -761,11 +761,15 @@ const MOTIFS = [
     ] },
   { key: 'wave', name: '물결', cat: 'land', orient: true, parts: [
       p => { p.moveTo(30, 98); p.bezierCurveTo(40, 80, 56, 66, 74, 66); p.bezierCurveTo(90, 66, 98, 80, 90, 86); p.bezierCurveTo(84, 90, 78, 84, 84, 80); p.bezierCurveTo(76, 76, 64, 80, 58, 90); p.bezierCurveTo(54, 96, 48, 99, 40, 99); p.closePath(); },
+      // 물보라: 파도 끝의 발톱과 물방울
+      p => { leaf(p, 94, 50, 9, 3.4, 1.2); leaf(p, 90, 58, 8, 3, 1.9); leaf(p, 96, 41, 7, 2.6, 0.6); },
+      p => { circ(p, 58, 20, 2.4); circ(p, 50, 23, 1.7); circ(p, 68, 15, 2); circ(p, 78, 18, 1.6); circ(p, 99, 32, 1.6); },
       p => { p.moveTo(2, 96); p.bezierCurveTo(18, 62, 38, 30, 66, 28); p.bezierCurveTo(90, 26, 100, 48, 86, 58); p.bezierCurveTo(76, 64, 68, 54, 76, 48); p.bezierCurveTo(68, 42, 54, 48, 48, 62); p.bezierCurveTo(42, 78, 30, 90, 14, 98); p.closePath(); }
     ], carve: [
       p => { p.moveTo(14, 88); p.bezierCurveTo(26, 64, 42, 44, 62, 38); }, p => { p.moveTo(24, 90); p.bezierCurveTo(34, 72, 44, 56, 58, 48); },
       p => { p.moveTo(8, 92); p.bezierCurveTo(20, 66, 36, 44, 56, 34); },
-      p => spiral(p, 80, 46, 7, 1.1, 0.4), p => spiral(p, 86, 79, 4.5, 1.0, 0.4), p => { p.moveTo(46, 94); p.bezierCurveTo(54, 82, 64, 74, 76, 72); }
+      p => spiral(p, 80, 46, 7, 1.1, 0.4), p => spiral(p, 86, 79, 4.5, 1.0, 0.4), p => { p.moveTo(46, 94); p.bezierCurveTo(54, 82, 64, 74, 76, 72); },
+      p => { p.moveTo(30, 90); p.bezierCurveTo(40, 66, 52, 48, 70, 42); }, p => { p.moveTo(56, 95); p.bezierCurveTo(62, 86, 70, 80, 80, 78); }
     ] },
   { key: 'pine', name: '소나무', cat: 'plant', parts: [
       p => { p.moveTo(40, 98); p.bezierCurveTo(44, 74, 34, 60, 46, 44); p.bezierCurveTo(54, 34, 66, 32, 76, 28); p.lineTo(78, 33); p.bezierCurveTo(66, 38, 58, 42, 54, 50); p.bezierCurveTo(46, 62, 54, 76, 50, 98); p.closePath(); },
@@ -996,6 +1000,23 @@ const MOTIFS = [
   { key: 'b_gong', name: '工자띠', cat: 'border', band: { rails: [0.5], unit: [
       [[0.5, 0.1], [0.5, 0.9]], [[0.3, 0.1], [0.7, 0.1]], [[0.3, 0.9], [0.7, 0.9]], [[0, 0.28], [0, 0.72]]] } },
   { key: 'b_chang', name: '창살띠', cat: 'border', band: { rails: [0.3, 0.7], unit: [[[0.5, -0.18], [0.5, 1.18]], [[0, 0.3], [0, 0.7]]] } },
+  { key: 'b_pado', name: '파도띠', cat: 'border', band: { unit: [
+      { draw: (p, i, U, H) => { const x = i * U;
+          band(p, bez([x - 0.1 * U, 0.46 * H], [x + 0.22 * U, 0.34 * H], [x + 0.26 * U, -0.18 * H], [x + 0.6 * U, -0.25 * H], 18)
+            .concat(curlPts(x + 0.6 * U, -0.08 * H, 0.17 * H, 0.03 * H, -Math.PI / 2, 1.05, 1, 20).slice(1)), k => H * (0.3 * (1 - k) + 0.035)); } },
+      { draw: (p, i, U, H) => { const x = i * U;
+          band(p, bez([x - 0.02 * U, 0.46 * H], [x + 0.22 * U, 0.38 * H], [x + 0.24 * U, 0.02 * H], [x + 0.48 * U, -0.02 * H], 16)
+            .concat(curlPts(x + 0.48 * U, 0.08 * H, 0.1 * H, 0.02 * H, -Math.PI / 2, 1.0, 1, 14).slice(1)), k => H * (0.16 * (1 - k) + 0.03)); } },
+      { draw: (p, i, U, H) => { const x = i * U; circ(p, x + 0.86 * U, -0.3 * H, 0.035 * H); circ(p, x + 0.93 * U, -0.18 * H, 0.025 * H); circ(p, x + 0.8 * U, -0.36 * H, 0.02 * H); } }
+    ] } },
+  { key: 'b_chunghae', name: '비늘물결', cat: 'border', band: { unit: [0, 1, 2, 3, 4].flatMap(k => [1, 0.72, 0.46, 0.2].map(f => (
+      { draw: (p, i, U, H, n) => { const r = 0.54 * U, y = (-0.42 + k * 0.22) * H; circ(p, (i + (k % 2 ? 0 : 0.5)) * U, y, r * f); if (k % 2 && i === n - 1) circ(p, n * U, y, r * f); } }))) } },
+  { key: 'b_gubi', name: '굽이물결', cat: 'border', band: { unit: [
+      ...[-0.12, 0.1, 0.31].map((y0, j) => ({ draw: (p, i, U, H, n, L) => { if (i) return;
+          const pts = []; for (let x = -0.2 * U; x <= L + 0.2 * U; x += U / 16) pts.push([x, y0 * H + 0.08 * H * Math.sin((x / U + j * 0.33) * TAU)]);
+          band(p, pts, () => H * 0.1); } })),
+      { draw: (p, i, U, H) => { const cx = (i + 0.75) * U + 0.06 * H, cy = -0.28 * H; band(p, curlPts(cx, cy, 0.075 * H, 0.012 * H, Math.PI, 1.05, 1, 16), k => H * (0.075 * (1 - k) + 0.02)); } }
+    ] } },
   { key: 'b_dangcho', name: '당초띠', cat: 'border', band: { unit: [
       { smooth: true, pts: Array.from({ length: 21 }, (_, i) => [i / 20, 0.5 - 0.3 * Math.sin(i / 20 * TAU)]) },
       { smooth: true, pts: curlPts(0.34, 0.44, 0.2, 0.04, Math.PI * 0.95, 1.05, 1, 18) },
@@ -1064,17 +1085,24 @@ function lotusPetal(p, a, L, w) { leaf(p, 50 + Math.cos(a) * L / 2, 82 + Math.si
 function bandPieces(m, L, H) {
   const n = Math.max(1, Math.round(L / (H * 0.8))), U = L / n, w = H * 0.085, t = H * 0.1;
   const X = (i, x) => (i + x) * U, Y = y => (-0.32 + 0.64 * y) * H;
-  const pieces = [];
-  pieces.push(p => strip(p, 0, -H * 0.42, L, -H * 0.42, t));
-  pieces.push(p => strip(p, 0, H * 0.42, L, H * 0.42, t));
-  (m.band.rails || []).forEach(y => pieces.push(p => strip(p, 0, Y(y), L, Y(y), w)));
+  const border = [p => strip(p, 0, -H * 0.42, L, -H * 0.42, t), p => strip(p, 0, H * 0.42, L, H * 0.42, t)];
+  const units = [];
+  (m.band.rails || []).forEach(y => units.push(p => strip(p, 0, Y(y), L, Y(y), w)));
   m.band.unit.forEach(pl => {
     for (let i = 0; i < n; i++) {
-      if (pl.smooth) pieces.push(p => band(p, pl.pts.map(([x, y]) => [X(i, x), Y(y)]), () => w));
-      else for (let k = 0; k < pl.length - 1; k++) { const a = pl[k], b = pl[k + 1]; pieces.push(p => strip(p, X(i, a[0]), Y(a[1]), X(i, b[0]), Y(b[1]), w)); }
+      if (pl.draw) units.push(p => pl.draw(p, i, U, H, n, L));
+      else if (pl.smooth) units.push(p => band(p, pl.pts.map(([x, y]) => [X(i, x), Y(y)]), () => w));
+      else for (let k = 0; k < pl.length - 1; k++) { const a = pl[k], b = pl[k + 1]; units.push(p => strip(p, X(i, a[0]), Y(a[1]), X(i, b[0]), Y(b[1]), w)); }
     }
   });
-  return pieces;
+  return { border, units, L, H };
+}
+/* 띠 조각 그리기: 무늬는 위아래 테두리 안쪽으로 잘라 넣고, 테두리는 그 위에 */
+function paintBand(c, bp, paint) {
+  c.save(); c.beginPath(); c.rect(-1, -bp.H * 0.42, bp.L + 2, bp.H * 0.84); c.clip();
+  bp.units.forEach(paint);
+  c.restore();
+  bp.border.forEach(paint);
 }
 function bandGeom() {
   const a = st.start, b = st.cur || st.start, H = Math.max(30 * DPR, st.s * 1.5);
@@ -1086,7 +1114,7 @@ function stampBand(m, g, B, preview) {
   const c = preview ? ox : dx;
   c.save(); c.translate(g.A.x, g.A.y); c.rotate(g.ang);
   const base = Math.random();
-  bandPieces(m, g.L, g.H).forEach(f => {
+  paintBand(c, bandPieces(m, g.L, g.H), f => {
     const pth = new Path2D(); f(pth);
     if (preview) { c.fillStyle = 'rgba(232,224,234,.35)'; c.fill(pth); }
     else {
@@ -1762,10 +1790,11 @@ function drawIcon(cv, m) {
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, S, S);
   if (m.band) {
     c.scale(S / 100, S / 100); c.translate(2, 50);
-    bandPieces(m, 96, 34).forEach((f, k) => {
+    let k = 0;
+    paintBand(c, bandPieces(m, 96, 34), f => {
       const p = new Path2D(); f(p);
       c.lineJoin = 'round'; c.lineWidth = 2; c.strokeStyle = '#100b09'; c.stroke(p);
-      c.fillStyle = pal[k % 5]; c.fill(p);
+      c.fillStyle = pal[k++ % 5]; c.fill(p);
     });
     return;
   }
