@@ -538,6 +538,24 @@ function lotusPetalLines(p, bx, by, a, L, w) {
   const v0 = P(L * 0.1, 0), v1 = P(L * 0.62, 0); p.moveTo(v0[0], v0[1]); p.lineTo(v1[0], v1[1]);
 }
 
+/* ---- 기하 문양용: 끊음질 띠, 고리, 다각 고리 ---- */
+function strip(p, x1, y1, x2, y2, w) {
+  // 끝을 반 폭만큼 늘려 모서리가 맞물리게
+  const L = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / L * w / 2, uy = (y2 - y1) / L * w / 2;
+  band(p, [[x1 - ux, y1 - uy], [x2 + ux, y2 + uy]], () => w);
+}
+function ringP(p, cx, cy, r, w) { p.moveTo(cx + r, cy); p.arc(cx, cy, r, 0, TAU, false); p.moveTo(cx + r - w, cy); p.arc(cx, cy, r - w, 0, TAU, true); }
+function polyRing(p, cx, cy, r, w, n, rot) {
+  const P = (rr, i) => [cx + Math.cos(rot + i * TAU / n) * rr, cy + Math.sin(rot + i * TAU / n) * rr];
+  let q = P(r, 0); p.moveTo(q[0], q[1]); for (let i = 1; i < n; i++) { q = P(r, i); p.lineTo(q[0], q[1]); } p.closePath();
+  const ri = r - w / Math.cos(Math.PI / n);
+  q = P(ri, 0); p.moveTo(q[0], q[1]); for (let i = n - 1; i >= 1; i--) { q = P(ri, i); p.lineTo(q[0], q[1]); } p.closePath();
+}
+/* 원 테 안에서 x=c 세로줄(또는 y=c 가로줄)의 양 끝 */
+function chordV(p, c, r, w) { const h = Math.sqrt(Math.max(0, r * r - (c - 50) * (c - 50))); strip(p, c, 50 - h, c, 50 + h, w); }
+function chordH(p, c, r, w) { const h = Math.sqrt(Math.max(0, r * r - (c - 50) * (c - 50))); strip(p, 50 - h, c, 50 + h, c, w); }
+const RIM = p => ringP(p, 50, 50, 47, 5.5);
+
 /* ---- 학 (운학문의 나는 학, 오른쪽을 봄: 목을 앞으로 뻗고 다리는 뒤로, 두 날개를 위로 편 모습) ---- */
 const CRANE = { key: 'crane', name: '학', cat: 'animal', orient: true, parts: [], carve: [] };
 (function () {
@@ -834,6 +852,57 @@ const MOTIFS = [
       p => circ(p, 80, 25, 0.9),
       p => { p.moveTo(39, 77); p.lineTo(42, 78); p.moveTo(58, 77); p.lineTo(61, 77); p.moveTo(66, 44); p.lineTo(70, 46); }
     ] },
+  { key: 'lattice', name: '격자창살', cat: 'pattern', parts: [
+      ...[34, 50, 66].map(c => p => chordV(p, c, 43, 4)), ...[34, 50, 66].map(c => p => chordH(p, c, 43, 4)), RIM
+    ], carve: [] },
+  { key: 'ajamun', name: '아자문', cat: 'pattern', parts: [
+      ...[[50 - 30, 50 - 30, 50 - 21, 50 - 21], [80, 20, 71, 29], [20, 80, 29, 71], [80, 80, 71, 71]].map(q => p => strip(p, q[0], q[1], q[2], q[3], 3.6)),
+      ...(() => { const P = [[34, 24], [66, 24], [66, 34], [76, 34], [76, 66], [66, 66], [66, 76], [34, 76], [34, 66], [24, 66], [24, 34], [34, 34]];
+          return P.map((q, i) => p => { const r = P[(i + 1) % P.length]; strip(p, q[0], q[1], r[0], r[1], 3.8); }); })(),
+      p => strip(p, 42, 42, 58, 42, 3.4), p => strip(p, 58, 42, 58, 58, 3.4), p => strip(p, 58, 58, 42, 58, 3.4), p => strip(p, 42, 58, 42, 42, 3.4),
+      RIM
+    ], carve: [] },
+  { key: 'chilbo', name: '칠보문', cat: 'pattern', parts: [
+      p => ringP(p, 32, 50, 15, 3.6), p => ringP(p, 68, 50, 15, 3.6), p => ringP(p, 50, 32, 15, 3.6), p => ringP(p, 50, 68, 15, 3.6),
+      p => ringP(p, 50, 50, 15, 3.6), p => circ(p, 50, 50, 3.2), RIM
+    ], carve: [] },
+  { key: 'maedeup', name: '매듭문', cat: 'pattern', parts: [
+      p => ringP(p, 50, 30, 15, 4.6), p => ringP(p, 70, 50, 15, 4.6), p => ringP(p, 50, 70, 15, 4.6), p => ringP(p, 30, 50, 15, 4.6),
+      p => polyRing(p, 50, 50, 15, 4.6, 4, Math.PI / 4), p => circ(p, 50, 50, 3.6)
+    ], carve: [] },
+  { key: 'rosette', name: '꽃살문', cat: 'pattern', parts: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => p => { const a = i * TAU / 8 - Math.PI / 2; leaf(p, 50 + Math.cos(a) * 23, 50 + Math.sin(a) * 23, 27, 12.5, a); }),
+      p => circ(p, 50, 50, 8.5), p => ringP(p, 50, 50, 47, 4.5)
+    ], carve: [
+      p => { for (let i = 0; i < 8; i++) { const a = i * TAU / 8 - Math.PI / 2; p.moveTo(50 + Math.cos(a) * 14, 50 + Math.sin(a) * 14); p.lineTo(50 + Math.cos(a) * 31, 50 + Math.sin(a) * 31); } },
+      p => circ(p, 50, 50, 4)
+    ] },
+  { key: 'flowerlat', name: '꽃창살', cat: 'pattern', parts: [
+      p => chordV(p, 50, 43, 3.6), p => chordH(p, 50, 43, 3.6),
+      p => strip(p, 20, 20, 80, 80, 3), p => strip(p, 80, 20, 20, 80, 3),
+      ...[0, 1, 2, 3].map(i => p => { const a = i * TAU / 4 + Math.PI / 4; leaf(p, 50 + Math.cos(a) * 15, 50 + Math.sin(a) * 15, 22, 14, a); }),
+      p => circ(p, 50, 50, 6.5), RIM
+    ], carve: [ p => circ(p, 50, 50, 3) ] },
+  { key: 'bitsal', name: '빗살창살', cat: 'pattern', parts: [
+      ...[-24, -8, 8, 24].map(o => p => { const h = Math.sqrt(Math.max(0, 40 * 40 - o * o / 2)); const c = o / Math.SQRT2; strip(p, 50 + c - h / Math.SQRT2, 50 - c - h / Math.SQRT2, 50 + c + h / Math.SQRT2, 50 - c + h / Math.SQRT2, 3.4); }),
+      ...[-24, -8, 8, 24].map(o => p => { const h = Math.sqrt(Math.max(0, 40 * 40 - o * o / 2)); const c = o / Math.SQRT2; strip(p, 50 + c + h / Math.SQRT2, 50 + c - h / Math.SQRT2, 50 + c - h / Math.SQRT2, 50 + c + h / Math.SQRT2, 3.4); }),
+      RIM
+    ], carve: [] },
+  { key: 'octa', name: '팔각문', cat: 'pattern', parts: [
+      p => strip(p, 50, 14, 50, 86, 3.6), p => strip(p, 14, 50, 86, 50, 3.6),
+      p => polyRing(p, 50, 50, 26, 3.6, 4, 0),
+      p => polyRing(p, 50, 50, 16, 3.4, 8, Math.PI / 8),
+      p => polyRing(p, 50, 50, 47, 5.5, 8, Math.PI / 8)
+    ], carve: [] },
+  { key: 'noemun', name: '번개문', cat: 'pattern', parts: [
+      p => polyRing(p, 50, 50, 50 * Math.SQRT2 - 2, 5, 4, Math.PI / 4),
+      ...(() => { const P = [[22, 24], [78, 24], [78, 78], [30, 78], [30, 32], [70, 32], [70, 70], [38, 70], [38, 40], [62, 40], [62, 62], [46, 62], [46, 50], [54, 50]];
+          return P.slice(0, -1).map((q, i) => p => { const r = P[i + 1]; strip(p, q[0], q[1], r[0], r[1], 4); }); })()
+    ], carve: [] },
+  { key: 'taegeuk', name: '태극', cat: 'pattern', parts: [
+      p => { p.moveTo(4, 50); p.arc(50, 50, 46, Math.PI, Math.PI * 2, false); p.arc(73, 50, 23, 0, Math.PI, false); p.arc(27, 50, 23, 0, Math.PI, true); p.closePath(); },
+      p => { p.moveTo(4, 50); p.arc(50, 50, 46, Math.PI, 0, true); p.arc(73, 50, 23, 0, Math.PI, false); p.arc(27, 50, 23, 0, Math.PI, true); p.closePath(); }
+    ], carve: [] },
   PHOENIX
 ];
 function plumFlower(cx, cy, r) {
@@ -1502,7 +1571,7 @@ window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() =
 /* 오릴 무늬 고르기 */
 const MOTIF_BY = {}; MOTIFS.forEach(m => { MOTIF_BY[m.key] = m; });
 const shapesEl = document.getElementById('shapes');
-const CATS = [['sky', '하늘'], ['land', '산수'], ['plant', '꽃·나무'], ['animal', '새·짐승'], ['free', '손으로']];
+const CATS = [['sky', '하늘'], ['land', '산수'], ['plant', '꽃·나무'], ['animal', '새·짐승'], ['pattern', '문양'], ['free', '손으로']];
 const ICON_PAL = {
   0: ['#1f7f8a', '#3a5cb0', '#6e48a6', '#2a9a72', '#44a8b8'],
   128: ['#f2e8ee', '#ddd9f0', '#f4e2d6', '#d9ebe4', '#eadff2'],
