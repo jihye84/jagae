@@ -128,30 +128,46 @@ body {
 
 #shapes {
   position: fixed; left: 0; right: 0; margin-inline: auto; width: max-content; max-width: calc(100% - 24px); box-sizing: border-box;
-  display: flex; gap: 2px; padding: 6px; border-radius: 18px; overflow-x: auto; scrollbar-width: none;
+  display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 20px;
   background: var(--panel); border: 1px solid var(--panel-line);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
-#shapes::-webkit-scrollbar { display: none; }
-#shapes button {
-  appearance: none; border: 0; background: transparent; color: var(--ink); cursor: pointer; position: relative;
-  min-width: 54px; height: 60px; border-radius: 12px; padding: 4px 2px; flex: none;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font: inherit; font-size: 11px;
+#shapes .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+#shapes .tabs::-webkit-scrollbar, #shapes .grid::-webkit-scrollbar { display: none; }
+#shapes .tabs button {
+  appearance: none; flex: none; min-height: 36px; padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--panel-line); background: transparent; color: var(--muted); font: inherit; font-size: 13px;
 }
-#shapes button:hover { background: rgba(255,255,255,.05); }
-#shapes button:focus-visible { outline: 2px solid var(--pearl); outline-offset: 1px; }
-#shapes button canvas { width: 32px; height: 32px; }
-#shapes button span { color: var(--muted); line-height: 1; }
-#shapes button[aria-pressed="true"] { background: rgba(232, 224, 234, .1); }
-#shapes button[aria-pressed="true"] span { color: var(--ink); }
-#shapes button[aria-pressed="true"]::after {
-  content: ""; position: absolute; left: 50%; bottom: 2px; width: 14px; height: 3px; margin-left: -7px; border-radius: 2px; background: var(--cinnabar);
+#shapes .tabs button[aria-selected="true"] { background: rgba(232, 224, 234, .14); color: var(--ink); border-color: rgba(232, 224, 234, .35); }
+#shapes .tabs button:focus-visible, #shapes .tile:focus-visible { outline: 2px solid var(--pearl); outline-offset: 1px; }
+#shapes .grid { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+#shapes .tile {
+  appearance: none; flex: none; width: 68px; padding: 6px 2px 5px; border-radius: 14px; cursor: pointer; position: relative;
+  border: 1px solid transparent; background: rgba(0, 0, 0, .35); color: var(--muted); font: inherit; font-size: 11px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+#shapes .tile canvas { width: 50px; height: 50px; }
+#shapes .tile span { line-height: 1.1; white-space: nowrap; }
+#shapes .tile:hover { background: rgba(255, 255, 255, .06); }
+#shapes .tile[aria-pressed="true"] { background: rgba(232, 224, 234, .12); border-color: rgba(232, 224, 234, .4); color: var(--ink); }
+#shapes .tile[aria-pressed="true"]::after {
+  content: ""; position: absolute; left: 50%; bottom: -1px; width: 16px; height: 3px; margin-left: -8px; border-radius: 2px; background: var(--cinnabar);
+}
+#shapes .tip { margin: 0; padding: 0 4px; font-size: 12px; color: var(--muted); }
+@media (max-width: 560px) {
+  #shapes { width: auto; left: 12px; right: 12px; margin: 0; max-width: none; }
+  #shapes .tile { width: 60px; }
+  #shapes .tile canvas { width: 44px; height: 44px; }
+  #shapes .tip { display: none; }
 }
 @media (min-width: 1200px) and (min-aspect-ratio: 16/10) {
-  #shapes { margin: 0; right: auto; width: auto; max-width: none; display: grid; grid-template-columns: repeat(2, 64px);
-    top: 50%; transform: translateY(-50%); max-height: calc(100% - 32px); overflow-y: auto; }
-  #shapes button { min-width: 0; width: 64px; height: clamp(58px, 7vh, 76px); font-size: clamp(11px, 1.3vh, 14px); }
-  #shapes button canvas { width: clamp(30px, 3.6vh, 40px); height: clamp(30px, 3.6vh, 40px); }
+  #shapes { margin: 0; right: auto; width: auto; max-width: none; top: 50%; transform: translateY(-50%); max-height: calc(100% - 32px); }
+  #shapes .tabs { flex-wrap: wrap; max-width: calc(3 * clamp(72px, 8vh, 92px) + 12px); }
+  #shapes .grid { display: grid; grid-template-columns: repeat(3, clamp(72px, 8vh, 92px)); overflow-y: auto; }
+  #shapes .tile { width: auto; }
+  #shapes .tile canvas { width: clamp(50px, 5.6vh, 66px); height: clamp(50px, 5.6vh, 66px); }
+  #shapes .tile span { font-size: clamp(11px, 1.3vh, 14px); }
+  #shapes .tabs button { font-size: clamp(13px, 1.4vh, 16px); }
 }
 #ov { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #nogl {
@@ -523,7 +539,7 @@ function lotusPetalLines(p, bx, by, a, L, w) {
 }
 
 /* ---- 학 (운학문의 나는 학, 오른쪽을 봄: 목을 앞으로 뻗고 다리는 뒤로, 두 날개를 위로 편 모습) ---- */
-const CRANE = { key: 'crane', name: '학', orient: true, parts: [], carve: [] };
+const CRANE = { key: 'crane', name: '학', cat: 'animal', orient: true, parts: [], carve: [] };
 (function () {
   const P = CRANE.parts, C = CRANE.carve;
   // 먼 쪽 날개 (뒤에서 위로 조금 보임)
@@ -551,7 +567,7 @@ const CRANE = { key: 'crane', name: '학', orient: true, parts: [], carve: [] };
 })();
 
 /* ---- 봉황 (오른쪽을 보고 날며 긴 꼬리깃을 휘날림) ---- */
-const PHOENIX = { key: 'phoenix', name: '봉황', orient: true, parts: [], carve: [] };
+const PHOENIX = { key: 'phoenix', name: '봉황', cat: 'animal', orient: true, parts: [], carve: [] };
 (function () {
   const P = PHOENIX.parts, C = PHOENIX.carve;
   // 긴 꼬리깃 5가닥: 아래로 흘러내리다 끝이 당초처럼 말림
@@ -594,9 +610,9 @@ const PHOENIX = { key: 'phoenix', name: '봉황', orient: true, parts: [], carve
 })();
 
 const MOTIFS = [
-  { key: 'free', name: '손으로' },
-  { key: 'sun', name: '해', parts: [p => circ(p, 50, 50, 44)], carve: [p => { circ(p, 50, 50, 36); }] },
-  { key: 'cloud', name: '구름', orient: true, parts: [
+  { key: 'free', name: '손으로', cat: 'free' },
+  { key: 'sun', name: '해', cat: 'sky', parts: [p => circ(p, 50, 50, 44)], carve: [p => { circ(p, 50, 50, 36); }] },
+  { key: 'cloud', name: '영지구름', cat: 'sky', orient: true, parts: [
       // 뒤쪽 작은 구름머리
       p => { circ(p, 76, 30, 10); circ(p, 86, 37, 8); circ(p, 70, 40, 8); circ(p, 80, 44, 7); },
       // 길게 나부끼는 꼬리 (끝이 살짝 말림)
@@ -613,7 +629,48 @@ const MOTIFS = [
       p => { p.moveTo(68 + 10.5 * Math.cos(-1.0), 46 + 10.5 * Math.sin(-1.0)); p.arc(68, 46, 10.5, -1.0, 1.15); },
       p => polyline(p, bez([44, 63], [34, 72], [24, 70], [15, 80], 14))
     ] },
-  { key: 'mountain', name: '산', parts: [
+  { key: 'cloud2', name: '뭉게구름', cat: 'sky', orient: true, parts: [
+      p => { circ(p, 76, 30, 9); circ(p, 88, 36, 7); },
+      p => { circ(p, 20, 58, 12); circ(p, 34, 47, 15); circ(p, 52, 41, 17); circ(p, 70, 47, 14); circ(p, 84, 57, 11); ell(p, 52, 63, 40, 11, 0); }
+    ], carve: [
+      p => spiral(p, 34, 49, 9, 1.15, Math.PI * 1.2, 1), p => spiral(p, 52, 43, 11, 1.3, Math.PI * 1.1, 1), p => spiral(p, 70, 49, 8.5, 1.15, Math.PI * 1.6, -1),
+      p => spiral(p, 20, 59, 6.5, 1.0, Math.PI * 1.3, 1), p => spiral(p, 84, 58, 6, 1.0, Math.PI * 1.7, -1),
+      p => { p.moveTo(18, 67); p.bezierCurveTo(40, 71, 66, 71, 88, 66); }
+    ] },
+  { key: 'cloud3', name: '흐름구름', cat: 'sky', orient: true, parts: [
+      p => band(p, bez([4, 60], [30, 42], [56, 64], [84, 46], 30).concat(curlPts(88, 50, 4.5, 1.2, -Math.PI * 0.75, 0.8, 1, 10).slice(1)), k => 9 * Math.pow(Math.sin(Math.PI * Math.min(0.97, 0.03 + k * 0.94)), 0.8) + 0.6),
+      p => band(p, bez([16, 72], [36, 60], [58, 76], [80, 62], 26).concat(curlPts(83, 65, 3.4, 1, -Math.PI * 0.75, 0.75, 1, 8).slice(1)), k => 5.5 * Math.pow(Math.sin(Math.PI * Math.min(0.97, 0.03 + k * 0.94)), 0.8) + 0.5),
+      p => band(p, bez([30, 36], [44, 30], [58, 40], [70, 32], 18), k => 4 * Math.sin(Math.PI * Math.min(0.97, 0.03 + k * 0.94)) + 0.4)
+    ], carve: [
+      p => polyline(p, bez([10, 57], [32, 45], [56, 63], [82, 48], 24))
+    ] },
+  { key: 'cloud4', name: '말림구름', cat: 'sky', orient: true, parts: [
+      p => band(p, bez([38, 62], [58, 72], [80, 68], [97, 54], 22).concat(curlPts(94, 50, 4, 1.2, Math.PI * 0.2, 0.7, -1, 8).slice(1)), taper(15, 2)),
+      p => { circ(p, 34, 45, 20); circ(p, 54, 34, 11); circ(p, 17, 58, 9); circ(p, 46, 58, 12); }
+    ], carve: [
+      p => spiral(p, 34, 46, 16, 1.7, Math.PI * 0.4, 1), p => spiral(p, 54, 35, 7, 1.1, Math.PI * 1.4, 1),
+      p => polyline(p, bez([44, 66], [60, 72], [78, 68], [92, 58], 14))
+    ] },
+  { key: 'cloud5', name: '겹구름', cat: 'sky', orient: true, parts: [
+      p => { circ(p, 30, 40, 8); circ(p, 46, 35, 9); circ(p, 60, 39, 7); },
+      p => band(p, bez([66, 68], [80, 70], [92, 64], [98, 54], 16).concat(curlPts(95, 51, 3.4, 1, Math.PI * 0.2, 0.7, -1, 8).slice(1)), taper(10, 1.6)),
+      p => { ell(p, 42, 66, 33, 12, 0); circ(p, 18, 57, 11); circ(p, 35, 50, 14); circ(p, 54, 49, 13); circ(p, 69, 57, 10); }
+    ], carve: [
+      p => spiral(p, 35, 51, 9, 1.25, Math.PI * 1.2, 1), p => spiral(p, 54, 50, 8.5, 1.25, Math.PI * 1.7, -1), p => spiral(p, 18, 58, 6.5, 1.0, Math.PI * 1.3, 1),
+      p => spiral(p, 69, 58, 6, 1.0, Math.PI * 1.7, -1), p => spiral(p, 46, 36, 5, 1.0, Math.PI * 1.3, 1),
+      p => { p.moveTo(14, 70); p.bezierCurveTo(32, 74, 56, 74, 74, 70); }
+    ] },
+  { key: 'cloud6', name: '바람구름', cat: 'sky', orient: true, parts: [
+      p => { circ(p, 80, 26, 7); },
+      p => band(p, bez([66, 50], [58, 70], [46, 84], [32, 94], 18).concat(curlPts(30, 90, 3.5, 1, Math.PI * 0.3, 0.75, 1, 8).slice(1)), taper(7, 1.2)),
+      p => band(p, bez([60, 50], [46, 68], [30, 74], [14, 82], 18).concat(curlPts(13, 78, 3.8, 1, Math.PI * 0.4, 0.75, 1, 8).slice(1)), taper(8, 1.2)),
+      p => band(p, bez([56, 46], [40, 56], [22, 54], [6, 62], 18).concat(curlPts(6, 58, 3.8, 1, Math.PI * 0.45, 0.75, 1, 8).slice(1)), taper(8, 1.2)),
+      p => { circ(p, 62, 38, 15); circ(p, 74, 46, 8); }
+    ], carve: [
+      p => spiral(p, 62, 39, 11, 1.6, Math.PI * 0.6, -1), p => spiral(p, 80, 27, 4.5, 1.0, Math.PI, -1),
+      p => polyline(p, bez([58, 52], [46, 66], [30, 72], [17, 79], 12)), p => polyline(p, bez([55, 48], [40, 56], [24, 55], [10, 60], 12))
+    ] },
+  { key: 'mountain', name: '산', cat: 'land', parts: [
       p => { p.moveTo(26, 94); p.bezierCurveTo(34, 70, 40, 40, 46, 22); p.bezierCurveTo(48, 14, 52, 14, 54, 22); p.bezierCurveTo(56, 28, 60, 28, 62, 24); p.bezierCurveTo(64, 18, 68, 18, 70, 26); p.bezierCurveTo(76, 50, 82, 72, 90, 94); p.closePath(); },
       p => { p.moveTo(2, 94); p.bezierCurveTo(8, 76, 14, 58, 19, 46); p.bezierCurveTo(21, 40, 25, 40, 27, 46); p.bezierCurveTo(32, 60, 38, 78, 46, 94); p.closePath(); },
       p => { p.moveTo(52, 94); p.bezierCurveTo(58, 80, 64, 64, 70, 54); p.bezierCurveTo(72, 49, 76, 49, 78, 54); p.bezierCurveTo(84, 66, 90, 80, 98, 94); p.closePath(); }
@@ -623,7 +680,7 @@ const MOTIFS = [
       p => polyline(p, bez([74, 52], [72, 64], [70, 74], [66, 86], 10)),
       p => { p.moveTo(40, 60); p.lineTo(46, 63); p.moveTo(36, 72); p.lineTo(43, 75); p.moveTo(64, 46); p.lineTo(70, 44); p.moveTo(18, 62); p.lineTo(23, 64); }
     ] },
-  { key: 'wave', name: '물결', orient: true, parts: [
+  { key: 'wave', name: '물결', cat: 'land', orient: true, parts: [
       p => { p.moveTo(30, 98); p.bezierCurveTo(40, 80, 56, 66, 74, 66); p.bezierCurveTo(90, 66, 98, 80, 90, 86); p.bezierCurveTo(84, 90, 78, 84, 84, 80); p.bezierCurveTo(76, 76, 64, 80, 58, 90); p.bezierCurveTo(54, 96, 48, 99, 40, 99); p.closePath(); },
       p => { p.moveTo(2, 96); p.bezierCurveTo(18, 62, 38, 30, 66, 28); p.bezierCurveTo(90, 26, 100, 48, 86, 58); p.bezierCurveTo(76, 64, 68, 54, 76, 48); p.bezierCurveTo(68, 42, 54, 48, 48, 62); p.bezierCurveTo(42, 78, 30, 90, 14, 98); p.closePath(); }
     ], carve: [
@@ -631,7 +688,7 @@ const MOTIFS = [
       p => { p.moveTo(8, 92); p.bezierCurveTo(20, 66, 36, 44, 56, 34); },
       p => spiral(p, 80, 46, 7, 1.1, 0.4), p => spiral(p, 86, 79, 4.5, 1.0, 0.4), p => { p.moveTo(46, 94); p.bezierCurveTo(54, 82, 64, 74, 76, 72); }
     ] },
-  { key: 'pine', name: '소나무', parts: [
+  { key: 'pine', name: '소나무', cat: 'plant', parts: [
       p => { p.moveTo(40, 98); p.bezierCurveTo(44, 74, 34, 60, 46, 44); p.bezierCurveTo(54, 34, 66, 32, 76, 28); p.lineTo(78, 33); p.bezierCurveTo(66, 38, 58, 42, 54, 50); p.bezierCurveTo(46, 62, 54, 76, 50, 98); p.closePath(); },
       p => { p.moveTo(46, 60); p.bezierCurveTo(38, 52, 32, 50, 26, 46); p.lineTo(28, 43); p.bezierCurveTo(34, 46, 42, 50, 48, 55); p.closePath(); },
       p => sector(p, 26, 46, 22, Math.PI * 1.05, Math.PI * 1.95),
@@ -644,7 +701,7 @@ const MOTIFS = [
       p => rays(p, 50, 26, 4, 19, Math.PI * 1.05, Math.PI * 1.95, 9), p => rays(p, 86, 52, 3, 12, Math.PI * 1.08, Math.PI * 1.92, 6),
       p => { [[45, 92], [47, 84], [44, 76], [45, 68], [48, 60], [52, 50]].forEach(([x, y]) => { p.moveTo(x - 3, y); p.arc(x, y, 3, Math.PI, 0, true); }); }
     ] },
-  { key: 'bamboo', name: '대나무', parts: [
+  { key: 'bamboo', name: '대나무', cat: 'plant', parts: [
       // 마디로 끊어진 줄기(조각 3개) + 곁가지 + 아래로 드리운 个자 잎
       p => { p.moveTo(46, 98); p.lineTo(45.5, 72); p.lineTo(51.5, 72); p.lineTo(52, 98); p.closePath(); },
       p => { p.moveTo(45.4, 70.5); p.lineTo(45, 44); p.lineTo(51, 44); p.lineTo(51.4, 70.5); p.closePath(); },
@@ -659,7 +716,7 @@ const MOTIFS = [
       p => [[82, 36, 30, 0.9], [86, 26, 28, 0.15], [74, 40, 28, 1.55], [14, 28, 28, 2.3], [22, 34, 26, 1.75], [10, 18, 24, 2.95], [58, 56, 26, 0.95], [62, 62, 24, 0.45]]
         .forEach(([x, y, L, a]) => { p.moveTo(x - Math.cos(a) * L * 0.42, y - Math.sin(a) * L * 0.42); p.lineTo(x + Math.cos(a) * L * 0.4, y + Math.sin(a) * L * 0.4); })
     ] },
-  { key: 'lotus', name: '연꽃', parts: [
+  { key: 'lotus', name: '연꽃', cat: 'plant', parts: [
       // 연잎(왼쪽 아래)과 줄기
       p => { p.moveTo(30, 98); p.bezierCurveTo(30, 90, 33, 84, 40, 80); p.lineTo(42, 82); p.bezierCurveTo(36, 86, 33, 92, 34, 98); p.closePath(); },
       p => { p.moveTo(2, 78); p.bezierCurveTo(4, 66, 18, 62, 30, 66); p.bezierCurveTo(36, 68, 40, 74, 38, 80); p.bezierCurveTo(28, 76, 22, 82, 20, 88); p.bezierCurveTo(10, 88, 2, 86, 2, 78); p.closePath(); },
@@ -678,7 +735,7 @@ const MOTIFS = [
       p => lotusPetalLines(p, 50, 79, -Math.PI / 2, 60, 20),
       p => { [[-1.1, 16], [-0.6, 20], [-0.1, 18], [0.4, 14]].forEach(([a, L]) => { p.moveTo(30, 80); p.lineTo(30 + Math.cos(a + Math.PI) * L, 80 + Math.sin(a + Math.PI) * L * 0.6); }); }
     ] },
-  { key: 'plum', name: '매화', orient: true, parts: [
+  { key: 'plum', name: '매화', cat: 'plant', orient: true, parts: [
       // 늙은 매화 가지: 꺾이며 뻗는 굵은 줄기와 잔가지
       p => band(p, [[4, 96], [16, 80], [14, 68], [30, 56], [44, 52], [56, 40], [72, 34], [90, 18]], k => 9 * (1 - k * 0.7) + 1),
       p => band(p, [[30, 56], [34, 70], [48, 76], [60, 74]], k => 4.5 * (1 - k * 0.6) + 0.8),
@@ -690,7 +747,7 @@ const MOTIFS = [
       p => { plumStamens(p, 56, 26, 10.5); plumStamens(p, 76, 33, 9); plumStamens(p, 40, 74, 9.5); },
       p => { p.moveTo(12, 84); p.lineTo(16, 80); p.moveTo(24, 62); p.lineTo(28, 58); p.moveTo(64, 38); p.lineTo(68, 35); }
     ] },
-  { key: 'mushroom', name: '불로초', parts: [
+  { key: 'mushroom', name: '불로초', cat: 'plant', parts: [
       // 바위 언덕과 풀
       p => { p.moveTo(18, 98); p.bezierCurveTo(22, 88, 34, 84, 46, 87); p.bezierCurveTo(56, 82, 74, 84, 82, 98); p.closePath(); },
       p => leaf(p, 22, 88, 20, 4.5, -2.3), p => leaf(p, 80, 89, 18, 4.2, -0.75),
@@ -711,7 +768,7 @@ const MOTIFS = [
       p => { p.moveTo(32, 92); p.bezierCurveTo(36, 89, 40, 89, 44, 91); p.moveTo(60, 90); p.bezierCurveTo(64, 87, 70, 88, 72, 92); }
     ] },
   CRANE,
-  { key: 'butterfly', name: '나비', orient: true, parts: [
+  { key: 'butterfly', name: '나비', cat: 'animal', orient: true, parts: [
       p => { p.moveTo(48, 46); p.bezierCurveTo(40, 20, 16, 8, 6, 18); p.bezierCurveTo(2, 30, 14, 44, 46, 50); p.closePath(); },
       p => { p.moveTo(52, 46); p.bezierCurveTo(60, 20, 84, 8, 94, 18); p.bezierCurveTo(98, 30, 86, 44, 54, 50); p.closePath(); },
       p => { p.moveTo(47, 53); p.bezierCurveTo(20, 52, 10, 70, 20, 82); p.bezierCurveTo(30, 90, 42, 76, 48, 56); p.closePath(); },
@@ -723,7 +780,7 @@ const MOTIFS = [
       p => line(p, [46, 47, 20, 22]), p => line(p, [46, 48, 10, 33]), p => line(p, [54, 47, 80, 22]), p => line(p, [54, 48, 90, 33]),
       p => line(p, [47, 56, 22, 77]), p => line(p, [53, 56, 78, 77]), p => line(p, [47, 58, 32, 84]), p => line(p, [53, 58, 68, 84])
     ] },
-  { key: 'turtle', name: '거북', orient: true, parts: [
+  { key: 'turtle', name: '거북', cat: 'animal', orient: true, parts: [
       // 십장생 거북: 등딱지 + 길게 나부끼는 털꼬리(녹모)
       p => band(p, bez([26, 54], [16, 60], [10, 50], [2, 56], 16), taper(5, 1.2)),
       p => band(p, bez([26, 52], [16, 46], [8, 42], [0, 34], 16), taper(4.5, 1)),
@@ -1233,7 +1290,7 @@ function choose(attr, val) {
 bar.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.tool) { state.tool = b.dataset.tool; choose('tool', b.dataset.tool); showShapes(); }
-  else if (b.dataset.shell) { state.shell = +b.dataset.shell; choose('shell', b.dataset.shell); }
+  else if (b.dataset.shell) { state.shell = +b.dataset.shell; choose('shell', b.dataset.shell); if (!shapesEl.hidden) renderShapes(); }
   else if (b.dataset.size) { state.sizeKey = b.dataset.size; choose('size', b.dataset.size); }
 });
 document.getElementById('undo').addEventListener('click', () => { finishDemo(); undo(); });
@@ -1403,35 +1460,73 @@ window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() =
 /* 오릴 무늬 고르기 */
 const MOTIF_BY = {}; MOTIFS.forEach(m => { MOTIF_BY[m.key] = m; });
 const shapesEl = document.getElementById('shapes');
-MOTIFS.forEach(m => {
-  const b = document.createElement('button');
-  b.type = 'button'; b.dataset.motif = m.key; b.setAttribute('aria-pressed', String(m.key === state.motif));
-  b.setAttribute('aria-label', m.key === 'free' ? '손으로 테두리를 그려 오리기' : m.name + ' 무늬 오리기');
-  const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80;
-  const c = cv.getContext('2d');
-  if (m.parts) {
-    c.scale(0.8, 0.8);
-    m.parts.forEach((f, k) => { const p = new Path2D(); f(p); c.lineWidth = 3; c.strokeStyle = '#140f0d'; c.stroke(p); c.fillStyle = k % 2 ? '#cfc4d8' : '#e8e0ea'; c.fill(p); });
-    c.lineWidth = 1.6; c.lineCap = 'round'; c.strokeStyle = '#140f0d'; m.carve.forEach(f => { const p = new Path2D(); f(p); c.stroke(p); });
-  } else {
-    c.setLineDash([6, 5]); c.lineWidth = 4; c.strokeStyle = '#e8e0ea';
-    c.beginPath(); c.moveTo(20, 60); c.bezierCurveTo(4, 30, 30, 8, 52, 16); c.bezierCurveTo(78, 22, 80, 56, 58, 66); c.bezierCurveTo(44, 72, 30, 70, 20, 60); c.stroke();
+const CATS = [['sky', '하늘'], ['land', '산수'], ['plant', '꽃·나무'], ['animal', '새·짐승'], ['free', '손으로']];
+const ICON_PAL = {
+  0: ['#1f7f8a', '#3a5cb0', '#6e48a6', '#2a9a72', '#44a8b8'],
+  128: ['#f2e8ee', '#ddd9f0', '#f4e2d6', '#d9ebe4', '#eadff2'],
+  255: ['#9cb76a', '#c9b56c', '#6fa28a', '#b59ac0', '#a9c06f']
+};
+state.cat = (MOTIF_BY[state.motif] || {}).cat || 'sky';
+const tabsEl = document.createElement('div'); tabsEl.className = 'tabs'; tabsEl.setAttribute('role', 'tablist');
+const gridEl = document.createElement('div'); gridEl.className = 'grid';
+const tipEl = document.createElement('p'); tipEl.className = 'tip'; tipEl.textContent = '톡 찍기 · 끌면 크기와 방향';
+shapesEl.append(tabsEl, gridEl, tipEl);
+CATS.forEach(([k, name]) => {
+  const t = document.createElement('button'); t.type = 'button'; t.setAttribute('role', 'tab'); t.dataset.cat = k; t.textContent = name;
+  tabsEl.appendChild(t);
+});
+function drawIcon(cv, m) {
+  const c = cv.getContext('2d'), S = cv.width, pal = ICON_PAL[state.shell] || ICON_PAL[0];
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, S, S);
+  if (!m.parts) {
+    c.setLineDash([S * 0.07, S * 0.06]); c.lineWidth = S * 0.045; c.strokeStyle = pal[0]; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(S * .25, S * .72); c.bezierCurveTo(S * .05, S * .36, S * .36, S * .1, S * .62, S * .2);
+    c.bezierCurveTo(S * .95, S * .28, S * .95, S * .66, S * .68, S * .78); c.bezierCurveTo(S * .52, S * .85, S * .36, S * .84, S * .25, S * .72); c.stroke();
+    return;
   }
-  const sp = document.createElement('span'); sp.textContent = m.name;
-  b.appendChild(cv); b.appendChild(sp); shapesEl.appendChild(b);
+  c.scale(S / 100, S / 100);
+  m.parts.forEach((f, k) => {
+    const p = new Path2D(); f(p);
+    const a = k * 1.3 + 0.4, g = c.createLinearGradient(50 - Math.cos(a) * 50, 50 - Math.sin(a) * 50, 50 + Math.cos(a) * 50, 50 + Math.sin(a) * 50);
+    g.addColorStop(0, pal[k % 5]); g.addColorStop(0.5, pal[(k + 2) % 5]); g.addColorStop(1, pal[(k + 4) % 5]);
+    c.lineJoin = 'round'; c.lineWidth = 3; c.strokeStyle = '#100b09'; c.stroke(p);
+    c.fillStyle = g; c.fill(p);
+  });
+  c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = 1.6; c.strokeStyle = '#100b09';
+  m.carve.forEach(f => { const p = new Path2D(); f(p); c.stroke(p); });
+}
+function renderShapes() {
+  tabsEl.querySelectorAll('button').forEach(t => t.setAttribute('aria-selected', String(t.dataset.cat === state.cat)));
+  gridEl.textContent = '';
+  MOTIFS.filter(m => m.cat === state.cat).forEach(m => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tile'; b.dataset.motif = m.key; b.setAttribute('aria-pressed', String(m.key === state.motif));
+    b.setAttribute('aria-label', m.key === 'free' ? '손으로 테두리를 그려 오리기' : m.name + ' 무늬 오리기');
+    const cv = document.createElement('canvas'); cv.width = cv.height = 132; drawIcon(cv, m);
+    const sp = document.createElement('span'); sp.textContent = m.key === 'free' ? '테두리 그리기' : m.name;
+    b.append(cv, sp); gridEl.appendChild(b);
+  });
+  placeShapes();
+}
+tabsEl.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  state.cat = t.dataset.cat;
+  if (state.cat === 'free') state.motif = 'free';
+  renderShapes();
 });
-shapesEl.addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
+gridEl.addEventListener('click', e => {
+  const b = e.target.closest('.tile'); if (!b) return;
   state.motif = b.dataset.motif;
-  shapesEl.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  gridEl.querySelectorAll('.tile').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
 });
+renderShapes();
 function placeShapes() {
   if (shapesEl.hidden) return;
   const r = bar.getBoundingClientRect();
   if (wideMQ.matches) { shapesEl.style.left = (r.right + 10) + 'px'; shapesEl.style.bottom = ''; }
   else { shapesEl.style.left = ''; shapesEl.style.bottom = (window.innerHeight - r.top + 8) + 'px'; }
 }
-function showShapes() { shapesEl.hidden = state.tool !== 'lasso'; placeShapes(); }
+function showShapes() { const was = shapesEl.hidden; shapesEl.hidden = state.tool !== 'lasso'; if (was && !shapesEl.hidden) renderShapes(); else placeShapes(); }
 resize();
 const startDemo = () => { demo = buildDemo(); };
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(startDemo, startDemo); else startDemo();
