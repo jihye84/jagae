@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="자개 붓">
 <meta name="theme-color" content="#0c0908">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script>
 /* 카카오톡·네이버·페이스북·인스타그램 등 인앱 브라우저에서 열리면 기본 브라우저로 다시 열기 */
 (function () {
@@ -211,6 +212,7 @@ body {
 #rotate[hidden] { display: none; }
 #rotate svg { width: 64px; height: 64px; color: var(--pearl); }
 #rotate span { color: var(--muted); font-size: 13px; }
+#sheet #install { appearance: none; min-height: 44px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(232, 224, 234, .4); background: transparent; color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; }
 #sheet small { margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 #viewBtns {
   position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 30;
@@ -377,6 +379,8 @@ body.viewing #shellPill { display: none !important; }
     <button type="button" role="radio" data-r="1.7778"><i style="aspect-ratio:16/9"></i><span>16:9</span></button>
   </div>
   <button id="go" type="button">옻칠판 펼치기</button>
+  <button id="install" type="button" hidden>앱으로 설치하기</button>
+  <small id="installTip" hidden>설치한 앱으로 열면 주소창과 '전체 화면 종료' 안내 띠 없이 화면 가득 그려요.</small>
   <small id="iosTip" hidden>아이폰에서는 공유 버튼 → <b>홈 화면에 추가</b>로 열면<br>주소창 없이 화면 가득 쓸 수 있어요.</small>
 </div>
 <div id="rotate" role="alert" hidden><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="15" y="6" width="18" height="32" rx="3"/><path d="M22 33h4"/><path d="M40 20a14 14 0 0 0-6-9M37 12l-3-1 .5 3"/></svg><b>휴대폰을 세로로 세워 주세요</b><span>자개 붓은 세로 화면에서 그려요.</span></div>
@@ -2185,7 +2189,7 @@ document.addEventListener('pointerdown', e => {
   st.before = undoStack[undoStack.length - 1];
   if (st.before && TECH[state.tool]) FILL_R = 254;
   if (state.tool === 'lasso' && state.motif !== 'free') st.motif = state.motif;
-  lastT = e.timeStamp; lastCss = { x: bx(e), y: by(e) };
+  lastT = e.timeStamp; lastCss = { x: bx(e), y: by(e) }; trail.length = 0; trail.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
   add(bx(e) * DPR, by(e) * DPR, 1);
   setLightFromPointer(bx(e), by(e));
 });
@@ -2211,20 +2215,25 @@ document.addEventListener('pointermove', e => {
     const wf = widthFactor(ev, bx(ev), by(ev), ev.timeStamp);
     add(bx(ev) * DPR, by(ev) * DPR, wf);
     lastT = ev.timeStamp; lastCss = { x: bx(ev), y: by(ev) };
-    ov.style.opacity = stampOut(lastCss.x, lastCss.y) ? '.3' : '';   // 놓으면 취소될 자리: 미리보기를 흐리게
+    trail.push({ t: ev.timeStamp, x: ev.clientX, y: ev.clientY }); while (trail.length > 24) trail.shift();
+    ov.style.opacity = flickUp() ? '.2' : '';   // 튕겨 올리는 중이면 미리보기가 흐려짐 = 놓으면 취소
   }
 });
 /* 오리기 무늬를 판 밖으로 끌어내 놓으면 아무 일도 없던 것처럼 취소 */
-function stampOut(x, y) {
-  if (!st || st.tool !== 'lasso' || !st.motif) return false;
-  const mm = MOTIF_BY[st.motif]; if (!mm || mm.fill || mm.band) return false;   // 물결 채우기·띠는 판 끝까지 끌어 쓰므로 제외
-  const m = 2;
-  return x < -m || y < -m || x > cssW + m || y > cssH + m;
+/* 오리기 취소: 손을 떼기 직전 위로 휙 튕기면(빠르게 위로 쓸어 올리기) 아무 일도 없던 것처럼 취소.
+   판 밖에 놓는 것은 괜찮음 — 판을 꽉 채우려면 밖까지 끌어야 하므로 */
+const trail = [];
+function flickUp() {
+  if (!st || st.tool !== 'lasso' || !st.motif || trail.length < 2) return false;
+  const now = trail[trail.length - 1], cut = now.t - 110;
+  let a = trail[0]; for (const q of trail) if (q.t >= cut) { a = q; break; }
+  const dt = Math.max(16, now.t - a.t), vx = (now.x - a.x) / dt, vy = (now.y - a.y) / dt;
+  return vy < -0.9 && -vy > Math.abs(vx) * 1.6 && a.y - now.y > 40;   // 화면 px/ms, 위쪽으로 빠르고 곧게
 }
 function stop(e) {
   if (!drawing) return;
-  if (e && e.type === 'pointerup' && stampOut(bx(e), by(e))) { abortStroke(); toast('판 밖에 놓아서 취소했어요'); return; }
-  drawing = false; end(); ov.style.opacity = '';
+  if (e && e.type === 'pointerup' && flickUp()) { abortStroke(); trail.length = 0; ov.style.opacity = ''; return; }
+  drawing = false; end(); ov.style.opacity = ''; trail.length = 0;
 }
 glCanvas.addEventListener('pointerup', stop);
 glCanvas.addEventListener('pointercancel', stop);
@@ -2350,6 +2359,17 @@ window.addEventListener('pointerup', () => { if (wantFS && !fsEl() && sheetEl.cl
 // 시작 화면: 펼치기를 누르면 전체화면 + (아이폰) 기울기 허락을 한 번에
 const sheetEl = document.getElementById('sheet');
 if (/iPhone|iPod/.test(navigator.userAgent) && !standalone) document.getElementById('iosTip').hidden = false;
+/* 안드로이드 크롬: 앱으로 설치하면 브라우저 전체화면을 쓰지 않으므로 하단 안내 띠가 뜨지 않음 */
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); installEvt = e;
+  if (!standalone) { document.getElementById('install').hidden = false; document.getElementById('installTip').hidden = false; }
+});
+document.getElementById('install').addEventListener('click', () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  installEvt.userChoice.finally(() => { installEvt = null; document.getElementById('install').hidden = true; document.getElementById('installTip').hidden = true; });
+});
 const ratiosEl = document.getElementById('ratios');
 ratiosEl.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.r === boardAspect)));
 ratiosEl.addEventListener('click', e => {
