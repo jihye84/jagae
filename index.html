@@ -63,13 +63,15 @@
 html, body { height: 100%; overflow: hidden; margin: 0; }
 [hidden] { display: none !important; }
 body {
-  background: var(--lacquer); color: var(--ink);
+  background: radial-gradient(ellipse at 50% 40%, #1e1714 0%, #120d0b 75%); color: var(--ink);
   font-family: var(--font-body); font-size: 14px;
   -webkit-user-select: none; user-select: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
-#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+#gl { position: fixed; left: 0; top: 0; display: block; touch-action: none; cursor: crosshair; border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(214, 186, 160, .16), 0 0 0 5px #0a0706, 0 0 0 6px rgba(214, 186, 160, .08), 0 18px 50px rgba(0, 0, 0, .7);
+  transition: left .45s ease, top .45s ease, width .45s ease, height .45s ease; }
 
 .brand {
   position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); left: 18px;
@@ -208,7 +210,7 @@ body {
 }
 body.viewing #bar, body.viewing #shapes, body.viewing .brand, body.viewing #hint, body.viewing #reach { display: none !important; }
 body.viewing #gl { cursor: default; }
-#ov { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#ov { position: fixed; left: 0; top: 0; pointer-events: none; border-radius: 6px; }
 #nogl {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
   text-align: center; color: var(--ink); font-size: 16px;
@@ -442,17 +444,53 @@ gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 let dirty = true;
 
 /* ---------- 크기 ---------- */
+/* 옻칠판: 도구 띠를 뺀 자리에 놓인 판. 감상할 때는 같은 판을 화면 가득 키워 보여 준다 */
+const board = { x: 0, y: 0, w: 0, h: 0, s: 1, dx: 0, dy: 0 };
+let GW = 0, GH = 0;
+const satProbe = document.createElement('div');
+satProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px)';
+document.body.appendChild(satProbe);
+function boardRect() {
+  const vw = window.innerWidth, vh = window.innerHeight, m = vw < 560 ? 8 : 14;
+  const st = parseFloat(getComputedStyle(satProbe).paddingTop) || 0;
+  const r = bar.getBoundingClientRect();
+  const g = window.matchMedia('(min-width: 1200px) and (min-aspect-ratio: 16/10)').matches
+    ? { x: r.right + m, y: m + st, w: vw - r.right - 2 * m, h: vh - 2 * m - st }
+    : { x: m, y: m + st, w: vw - 2 * m, h: Math.max(160, r.top - m - (m + st)) };
+  /* 판의 가로세로 비율을 화면과 같게: 감상할 때 화면을 빈틈없이 채우도록 */
+  const k = (vw - 12) / (vh - 12);
+  let w = g.w, h = g.h;
+  if (w / h > k) w = h * k; else h = w / k;
+  return { x: g.x + (g.w - w) / 2, y: g.y + (g.h - h) / 2, w, h };
+}
+function placeBoard() {
+  const viewing = document.body.classList.contains('viewing');
+  const vw = window.innerWidth, vh = window.innerHeight, m = vw < 560 ? 6 : 16;
+  if (viewing) {
+    board.s = Math.min((vw - 2 * m) / board.w, (vh - 2 * m) / board.h);
+    board.dx = (vw - board.w * board.s) / 2; board.dy = (vh - board.h * board.s) / 2;
+  } else { board.s = 1; board.dx = board.x; board.dy = board.y; }
+  const dw = board.w * board.s, dh = board.h * board.s;
+  for (const c of [glCanvas, ov]) { c.style.left = board.dx + 'px'; c.style.top = board.dy + 'px'; c.style.width = dw + 'px'; c.style.height = dh + 'px'; }
+  let gs = board.s;
+  if (W * H * gs * gs > 6e6) gs = Math.sqrt(6e6 / (W * H));
+  const nGW = Math.max(1, Math.round(W * gs)), nGH = Math.max(1, Math.round(H * gs));
+  if (nGW !== GW || nGH !== GH) { GW = nGW; GH = nGH; glCanvas.width = GW; glCanvas.height = GH; gl.viewport(0, 0, GW, GH); }
+}
+/* 화면 좌표 → 옻칠판 안 좌표(css px) */
+const bx = e => (e.clientX - board.dx) / board.s, by = e => (e.clientY - board.dy) / board.s;
 function resize() {
-  cssW = window.innerWidth; cssH = window.innerHeight;
+  if (!document.body.classList.contains('viewing')) { const r = boardRect(); board.x = r.x; board.y = r.y; board.w = Math.max(100, r.w); board.h = Math.max(100, r.h); }
+  cssW = Math.round(board.w); cssH = Math.round(board.h);
   let d = Math.min(window.devicePixelRatio || 1, 2);
   const maxPx = 4.2e6;
   if (cssW * cssH * d * d > maxPx) d = Math.sqrt(maxPx / (cssW * cssH));
   const nW = Math.max(1, Math.round(cssW * d)), nH = Math.max(1, Math.round(cssH * d));
-  if (nW === W && nH === H) return;
+  if (nW === W && nH === H) { placeBoard(); return; }
   let old = null, oldT = null, oW = W, oH = H;
   if (W && H) { old = document.createElement('canvas'); old.width = W; old.height = H; old.getContext('2d').drawImage(data, 0, 0); oldT = tech; }
   DPR = d; W = nW; H = nH;
-  glCanvas.width = W; glCanvas.height = H;
+  GW = 0;
   ov.width = W; ov.height = H;
   data.width = W; data.height = H;
   sm.width = W; sm.height = H;
@@ -467,7 +505,7 @@ function resize() {
       for (let x = 0; x < pw; x++) { const X = x + ox0; if (X < 0 || X >= W) continue; tech[Y * W + X] = oldT[sy * oW + Math.min(oW - 1, (x / s) | 0)]; } }
   }
   undoStack.length = 0;
-  gl.viewport(0, 0, W, H);
+  placeBoard();
   dirty = true;
 }
 
@@ -1575,6 +1613,7 @@ let ovDirty = false;
 function clearOverlay() {
   const n = document.createElement('canvas');
   n.id = 'ov'; n.setAttribute('aria-hidden', 'true'); n.width = W; n.height = H;
+  n.style.cssText = ov.style.cssText;
   ov.replaceWith(n); ov = n; ox = n.getContext('2d');
   ovDirty = false;
 }
@@ -1863,7 +1902,7 @@ function widthFactor(e, x, y, t) {
 }
 glCanvas.addEventListener('pointerdown', e => {
   if (e.button !== undefined && e.button > 0) return;
-  if (document.body.classList.contains('viewing')) { setLightFromPointer(e.clientX, e.clientY); return; }
+  if (document.body.classList.contains('viewing')) { setLightFromPointer(bx(e), by(e)); return; }
   finishDemo();
   try { glCanvas.setPointerCapture(e.pointerId); } catch (_) {}
   drawing = true; wfSmooth = 1; lastCss = null;
@@ -1873,9 +1912,9 @@ glCanvas.addEventListener('pointerdown', e => {
   st.before = undoStack[undoStack.length - 1];
   if (st.before && TECH[state.tool]) FILL_R = 254;
   if (state.tool === 'lasso' && state.motif !== 'free') st.motif = state.motif;
-  lastT = e.timeStamp; lastCss = { x: e.clientX, y: e.clientY };
-  add(e.clientX * DPR, e.clientY * DPR, 1);
-  setLightFromPointer(e.clientX, e.clientY);
+  lastT = e.timeStamp; lastCss = { x: bx(e), y: by(e) };
+  add(bx(e) * DPR, by(e) * DPR, 1);
+  setLightFromPointer(bx(e), by(e));
 });
 /* 부스러기 범위: 마우스를 올리거나 칠하는 동안 흩뿌려질 둥근 범위를 점선으로 보여 준다 */
 const reach = document.getElementById('reach');
@@ -1891,13 +1930,13 @@ glCanvas.addEventListener('pointerdown', showReach);
 glCanvas.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') reach.hidden = true; });
 glCanvas.addEventListener('pointermove', e => {
   showReach(e);
-  setLightFromPointer(e.clientX, e.clientY);
+  setLightFromPointer(bx(e), by(e));
   if (!drawing) return;
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
   for (const ev of (evs.length ? evs : [e])) {
-    const wf = widthFactor(ev, ev.clientX, ev.clientY, ev.timeStamp);
-    add(ev.clientX * DPR, ev.clientY * DPR, wf);
-    lastT = ev.timeStamp; lastCss = { x: ev.clientX, y: ev.clientY };
+    const wf = widthFactor(ev, bx(ev), by(ev), ev.timeStamp);
+    add(bx(ev) * DPR, by(ev) * DPR, wf);
+    lastT = ev.timeStamp; lastCss = { x: bx(ev), y: by(ev) };
   }
 });
 function stop() { if (drawing) { drawing = false; end(); } }
@@ -1996,8 +2035,8 @@ function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTi
 function setViewing(on) {
   document.body.classList.toggle('viewing', on);
   showBtn.hidden = !on;
-  if (on) { reach.hidden = true; clearOverlay(); toast('작품 감상 중 · 오른쪽 아래 「도구」로 다시 꺼내요'); enterFS(); }
-  else toastEl.hidden = true;
+  if (on) { reach.hidden = true; clearOverlay(); toast('작품 감상 중 · 오른쪽 아래 「도구」로 다시 꺼내요'); enterFS(); placeBoard(); }
+  else { toastEl.hidden = true; resize(); }
 }
 hideBtn.addEventListener('click', () => setViewing(true));
 showBtn.addEventListener('click', () => setViewing(false));
@@ -2007,9 +2046,7 @@ window.addEventListener('keydown', e => { if (e.key === 'Escape' && document.bod
 let demo = null;
 const wideMQ = matchMedia('(min-width: 1200px) and (min-aspect-ratio: 16/10)');
 function drawRegion() {
-  const r = bar.getBoundingClientRect();
-  if (wideMQ.matches) return { x: r.right + 10, y: 0, w: cssW - r.right - 10, h: cssH }; // 왼쪽 세로 띠
-  return { x: 0, y: 0, w: cssW, h: Math.max(200, r.top - 8) };
+  return { x: 0, y: 0, w: cssW, h: cssH };   // 옻칠판 전체
 }
 function buildDemo() {
   const g = drawRegion();
@@ -2118,8 +2155,8 @@ function frame(now) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, data);
     dirty = false;
   }
-  gl.uniform2f(uRes, W, H);
-  gl.uniform1f(uDpr, DPR);
+  gl.uniform2f(uRes, GW, GH);
+  gl.uniform1f(uDpr, DPR * GW / W);
   gl.uniform2f(uLight, light.x, light.y);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   requestAnimationFrame(frame);
