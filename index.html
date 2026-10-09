@@ -195,14 +195,21 @@ body {
   background: var(--pearl); color: var(--lacquer); box-shadow: 0 6px 30px rgba(232, 224, 234, .18); }
 #sheet #go:focus-visible { outline: 2px solid var(--cinnabar); outline-offset: 3px; }
 #sheet small { margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.6; }
-#showTools {
+#viewBtns {
   position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 30;
+  display: flex; gap: 8px;
+}
+#viewBtns[hidden] { display: none; }
+.vbtn {
   display: flex; align-items: center; gap: 6px; height: 48px; padding: 0 16px 0 12px; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--panel-line); background: var(--panel); color: var(--ink); font: inherit; font-size: 14px;
   opacity: .45; transition: opacity .3s ease; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
-#showTools:hover, #showTools:focus-visible { opacity: 1; outline: none; }
-#showTools svg { width: 22px; height: 22px; }
+.vbtn:hover, .vbtn:focus-visible { opacity: 1; outline: none; }
+.vbtn svg { width: 22px; height: 22px; }
+#flash { position: fixed; inset: 0; z-index: 70; background: #fff; opacity: 0; pointer-events: none; }
+#flash.on { animation: flash .5s ease-out; }
+@keyframes flash { from { opacity: .55; } to { opacity: 0; } }
 #toast {
   position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30;
   padding: 10px 18px; border-radius: 999px; background: var(--panel); border: 1px solid var(--panel-line); color: var(--ink);
@@ -258,7 +265,8 @@ body.viewing #gl { cursor: default; }
   <button id="go" type="button">옻칠판 펼치기</button>
   <small id="iosTip" hidden>아이폰에서는 공유 버튼 → <b>홈 화면에 추가</b>로 열면<br>주소창 없이 화면 가득 쓸 수 있어요.</small>
 </div>
-<button id="showTools" aria-label="도구 꺼내기" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 18l3-1 2 2-1 3-4-4z"/><path d="M9 19L20 6a1.6 1.6 0 0 0-2.3-2.2L6.5 16"/></svg><span>도구</span></button>
+<div id="viewBtns" hidden><button id="snapV" class="vbtn" aria-label="작품 사진으로 저장"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2.6l1.6-2.2h5.6L16.4 7H19a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="12.8" r="3.4"/></svg><span>사진</span></button><button id="showTools" class="vbtn" aria-label="도구 꺼내기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 18l3-1 2 2-1 3-4-4z"/><path d="M9 19L20 6a1.6 1.6 0 0 0-2.3-2.2L6.5 16"/></svg><span>도구</span></button></div>
+<div id="flash" aria-hidden="true"></div>
 <div id="toast" aria-live="polite" hidden></div>
 <div id="reach" aria-hidden="true" hidden></div>
 <div id="shapes" role="group" aria-label="오릴 무늬" hidden></div>
@@ -305,6 +313,9 @@ body.viewing #gl { cursor: default; }
     <button id="clear" aria-label="초기화 (두 번 누르기)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9l8 6M16 9l-8 6" stroke-linecap="round" opacity=".55"/></svg>
       <span class="lb">초기화</span></button>
+    <button id="snap" aria-label="작품 사진으로 저장">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2.6l1.6-2.2h5.6L16.4 7H19a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="12.8" r="3.4"/></svg>
+      <span class="lb">사진</span></button>
     <button id="fs" aria-label="전체화면">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
       <span class="lb">전체화면</span></button>
@@ -973,6 +984,60 @@ const WATER = [
       return out; } }
 ];
 
+/* 대나무: 끝으로 갈수록 가늘어지는 마디 줄기 두 대와 어린 죽순 하나, 마디에서 뻗은 잔가지 끝에 아래로 드리운 댓잎 다발 */
+const BAMBOO = (function () {
+  const parts = [], carve = [];
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const P = (sp, t) => { const u = 1 - t; return [u*u*u*sp[0][0] + 3*u*u*t*sp[1][0] + 3*u*t*t*sp[2][0] + t*t*t*sp[3][0], u*u*u*sp[0][1] + 3*u*u*t*sp[1][1] + 3*u*t*t*sp[2][1] + t*t*t*sp[3][1]]; };
+  // 댓잎: 잎자루 쪽이 넓고 끝이 길게 뾰족
+  function bleaf(p, x, y, a, L, w) {
+    const c = Math.cos(a), s = Math.sin(a), Q = (u, v) => [x + u * c - v * s, y + u * s + v * c];
+    const b0 = Q(0, 0), t = Q(L, 0), c1 = Q(L * 0.12, -w * 0.62), c2 = Q(L * 0.5, -w * 0.62), c3 = Q(L * 0.5, w * 0.5), c4 = Q(L * 0.12, w * 0.55);
+    p.moveTo(b0[0], b0[1]); p.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], t[0], t[1]); p.bezierCurveTo(c3[0], c3[1], c4[0], c4[1], b0[0], b0[1]); p.closePath();
+  }
+  function leaves(x, y, list) {   // list: [각도(도), 길이, 폭]
+    list.forEach(([deg, L, w]) => {
+      const a = deg * Math.PI / 180;
+      parts.push(p => bleaf(p, x, y, a, L, w));
+      carve.push(p => { p.moveTo(x + Math.cos(a) * L * 0.1, y + Math.sin(a) * L * 0.1); p.lineTo(x + Math.cos(a) * L * 0.78, y + Math.sin(a) * L * 0.78); });
+    });
+  }
+  // 줄기: 뼈대 곡선을 마디(ts)로 끊어 조각마다 따로, 폭은 w0→w1, 꼭대기 조각은 뾰족하게
+  function culm(sp, ts, w0, w1) {
+    const W = t => lerp(w0, w1, t);
+    for (let i = 0; i < ts.length - 1; i++) {
+      const a = ts[i] + (i ? 0.006 : 0), b = ts[i + 1] - 0.006, last = i === ts.length - 2, pts = [];
+      for (let k = 0; k <= 10; k++) pts.push(P(sp, lerp(a, b, k / 10)));
+      parts.push(p => band(p, pts, u => { const t = lerp(a, b, u); return last ? W(t) * Math.min(1, (1 - u) * 1.6 + 0.04) : W(t) * (1 + 0.12 * Math.pow(Math.abs(u - 0.5) * 2, 4)); }));
+      if (i) { const q = P(sp, ts[i]), q2 = P(sp, ts[i] + 0.01), dx = q2[0] - q[0], dy = q2[1] - q[1], d = Math.hypot(dx, dy) || 1, h = W(ts[i]) * 0.75;
+        carve.push(p => { p.moveTo(q[0] - dy / d * h, q[1] + dx / d * h); p.lineTo(q[0] + dy / d * h, q[1] - dx / d * h); }); }
+    }
+  }
+  function twig(pts, w) { parts.push(p => band(p, pts, u => w * (1 - u * 0.6))); return pts[pts.length - 1]; }
+
+  // 큰 줄기 (살짝 휘며 끝이 실처럼 가늘어짐)
+  const A = [[52, 100], [53, 68], [50, 36], [56, 5]];
+  culm(A, [0, 0.13, 0.26, 0.39, 0.51, 0.63, 0.74, 0.84, 0.93, 1], 6.2, 1);
+  // 작은 줄기(왼쪽으로 기움)
+  const B = [[40, 100], [38, 78], [34, 56], [28, 36]];
+  culm(B, [0, 0.2, 0.4, 0.58, 0.75, 0.89, 1], 4.2, 0.9);
+  // 어린 죽순
+  const C = [[82, 100], [82.5, 88], [82, 78], [84, 68]];
+  culm(C, [0, 0.36, 0.7, 1], 3, 0.8);
+
+  // 잔가지 끝에 아래로 드리운 댓잎 다발 (90°가 바로 아래)
+  let e, m;
+  e = twig([P(A, 0.51), [58, 50], [65, 47], [72, 46]], 1.2); leaves(e[0], e[1], [[8, 23, 4.8], [34, 25, 5.2], [60, 23, 4.8], [86, 18, 4.2]]);
+  m = [62, 48.5]; leaves(m[0], m[1], [[70, 16, 3.8]]);
+  e = twig([P(A, 0.7), [60, 29], [68, 25], [76, 24]], 1.1); leaves(e[0], e[1], [[0, 21, 4.6], [26, 24, 5], [52, 22, 4.6], [-26, 17, 4]]);
+  e = twig([P(A, 0.86), [50, 16], [45, 13], [40, 12]], 1); leaves(e[0], e[1], [[178, 19, 4.4], [150, 22, 4.8], [122, 20, 4.4]]);
+  e = P(A, 1); leaves(e[0], e[1] + 1.2, [[-20, 15, 3.8], [12, 18, 4.2], [42, 15, 3.8], [-128, 10, 2.8]]);
+  e = twig([P(B, 0.4), [34, 60], [27, 58], [20, 59]], 1); leaves(e[0], e[1], [[174, 19, 4.4], [146, 22, 4.8], [118, 19, 4.4]]);
+  e = twig([P(B, 0.75), [28, 43], [22, 40], [16, 40]], 0.9); leaves(e[0], e[1], [[182, 17, 4.2], [154, 19, 4.6], [126, 17, 4.2], [208, 14, 3.6]]);
+  e = P(B, 1); leaves(e[0], e[1] + 1, [[-58, 12, 3.2], [196, 14, 3.6], [160, 15, 3.8]]);
+  e = P(C, 1); leaves(e[0], e[1] + 1, [[-30, 14, 4], [4, 16, 4.4], [34, 14, 4], [150, 13, 3.8], [-100, 9, 2.8]]);
+  return { key: 'bamboo', name: '대나무', cat: 'plant', parts, carve };
+})();
 const MOTIFS = [
   { key: 'free', name: '손으로', cat: 'free' },
   { key: 'sun', name: '해', cat: 'sky', parts: [p => circ(p, 50, 50, 44)], carve: [p => { circ(p, 50, 50, 36); }] },
@@ -1091,21 +1156,7 @@ const MOTIFS = [
       p => { [[45, 92], [47, 84], [44, 76], [45, 68], [48, 60], [52, 50]].forEach(([x, y]) => { p.moveTo(x - 3, y); p.arc(x, y, 3, Math.PI, 0, true); }); }
     ] },
   REDPINE,
-  { key: 'bamboo', name: '대나무', cat: 'plant', parts: [
-      // 마디로 끊어진 줄기(조각 3개) + 곁가지 + 아래로 드리운 个자 잎
-      p => { p.moveTo(46, 98); p.lineTo(45.5, 72); p.lineTo(51.5, 72); p.lineTo(52, 98); p.closePath(); },
-      p => { p.moveTo(45.4, 70.5); p.lineTo(45, 44); p.lineTo(51, 44); p.lineTo(51.4, 70.5); p.closePath(); },
-      p => { p.moveTo(44.9, 42.5); p.lineTo(44.6, 14); p.lineTo(50.4, 14); p.lineTo(50.9, 42.5); p.closePath(); },
-      p => band(p, bez([50, 44], [58, 38], [66, 34], [74, 28], 12), taper(2.4, 1.2)),
-      p => band(p, bez([46, 30], [38, 26], [30, 22], [22, 20], 12), taper(2.2, 1.1)),
-      p => leaf(p, 82, 36, 30, 7.5, 0.9), p => leaf(p, 86, 26, 28, 7, 0.15), p => leaf(p, 74, 40, 28, 7, 1.55),
-      p => leaf(p, 14, 28, 28, 7, 2.3), p => leaf(p, 22, 34, 26, 6.5, 1.75), p => leaf(p, 10, 18, 24, 6, 2.95),
-      p => leaf(p, 58, 56, 26, 6.5, 0.95), p => leaf(p, 62, 62, 24, 6, 0.45)
-    ], carve: [
-      p => { p.moveTo(45, 71.3); p.lineTo(52, 71.3); p.moveTo(44.6, 43.3); p.lineTo(51.4, 43.3); },
-      p => [[82, 36, 30, 0.9], [86, 26, 28, 0.15], [74, 40, 28, 1.55], [14, 28, 28, 2.3], [22, 34, 26, 1.75], [10, 18, 24, 2.95], [58, 56, 26, 0.95], [62, 62, 24, 0.45]]
-        .forEach(([x, y, L, a]) => { p.moveTo(x - Math.cos(a) * L * 0.42, y - Math.sin(a) * L * 0.42); p.lineTo(x + Math.cos(a) * L * 0.4, y + Math.sin(a) * L * 0.4); })
-    ] },
+  BAMBOO,
   { key: 'lotus', name: '연꽃', cat: 'plant', parts: [
       // 연잎(왼쪽 아래)과 줄기
       p => { p.moveTo(30, 98); p.bezierCurveTo(30, 90, 33, 84, 40, 80); p.lineTo(42, 82); p.bezierCurveTo(36, 86, 33, 92, 34, 98); p.closePath(); },
@@ -2034,11 +2085,59 @@ let toastT = 0;
 function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { toastEl.hidden = true; }, 2600); }
 function setViewing(on) {
   document.body.classList.toggle('viewing', on);
-  showBtn.hidden = !on;
+  document.getElementById('viewBtns').hidden = !on;
   if (on) { reach.hidden = true; clearOverlay(); toast('작품 감상 중 · 오른쪽 아래 「도구」로 다시 꺼내요'); enterFS(); placeBoard(); }
   else { toastEl.hidden = true; resize(); }
 }
 hideBtn.addEventListener('click', () => setViewing(true));
+/* ---------- 사진: 지금 빛 그대로 작품을 크게 찍어 액자 테두리와 낙관을 더해 저장 ---------- */
+let snapping = false;
+function snapshot() {
+  if (snapping) return; snapping = true;
+  const fl = document.getElementById('flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
+  let gs = clamp(2400 / Math.max(W, H), 1, 2.5);
+  if (W * H * gs * gs > 9e6) gs = Math.sqrt(9e6 / (W * H));
+  const sw = Math.round(W * gs), sh = Math.round(H * gs);
+  glCanvas.width = sw; glCanvas.height = sh; gl.viewport(0, 0, sw, sh);
+  if (dirty) { gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, data); dirty = false; }
+  gl.uniform2f(uRes, sw, sh); gl.uniform1f(uDpr, DPR * gs); gl.uniform2f(uLight, light.x, light.y);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  const pad = Math.round(Math.max(sw, sh) * 0.035), out = document.createElement('canvas');
+  out.width = sw + pad * 2; out.height = sh + pad * 2;
+  const c = out.getContext('2d');
+  const g = c.createLinearGradient(0, 0, out.width, out.height);
+  g.addColorStop(0, '#20160f'); g.addColorStop(0.5, '#140d0a'); g.addColorStop(1, '#1e1510');
+  c.fillStyle = g; c.fillRect(0, 0, out.width, out.height);
+  c.drawImage(glCanvas, pad, pad);
+  GW = 0; placeBoard();
+  c.strokeStyle = 'rgba(214, 186, 160, .28)'; c.lineWidth = Math.max(1, pad * 0.03);
+  c.strokeRect(pad - c.lineWidth, pad - c.lineWidth, sw + c.lineWidth * 2, sh + c.lineWidth * 2);
+  // 낙관(붉은 도장)
+  const ss = Math.round(pad * 0.62), sx = out.width - pad - ss, sy = out.height - pad + (pad - ss) / 2;
+  c.fillStyle = '#a8392a'; c.beginPath(); c.roundRect ? c.roundRect(sx, sy, ss, ss, ss * 0.12) : c.rect(sx, sy, ss, ss); c.fill();
+  c.fillStyle = '#f6e9de'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = '700 ' + Math.round(ss * 0.36) + 'px "Gowun Batang", serif';
+  c.fillText('자', sx + ss / 2, sy + ss * 0.3); c.fillText('개', sx + ss / 2, sy + ss * 0.71);
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  const name = '자개붓-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()) + z(d.getSeconds()) + '.png';
+  out.toBlob(blob => {
+    snapping = false;
+    if (!blob) { toast('사진을 만들지 못했어요'); return; }
+    const file = new File([blob], name, { type: 'image/png' });
+    const mobile = matchMedia('(pointer: coarse)').matches;
+    if (mobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: '자개 붓' }).then(() => toast('사진을 보냈어요'), err => { if (err && err.name !== 'AbortError') download(blob, name); });
+    } else download(blob, name);
+  }, 'image/png');
+}
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('사진을 저장했어요');
+}
+document.getElementById('snap').addEventListener('click', snapshot);
+document.getElementById('snapV').addEventListener('click', snapshot);
 showBtn.addEventListener('click', () => setViewing(false));
 window.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('viewing')) setViewing(false); });
 
