@@ -1384,11 +1384,13 @@ function motifGeom() {
     rot = flip ? ang - Math.PI * Math.sign(ang || 1) : ang;
     rot = clamp(rot, -1.05, 1.05);
   } else if (dragged) {
-    /* 서 있는 무늬(대나무·소나무·산 등): 아래에서 위로 끌면 누른 자리에 밑동을 두고, 끈 방향으로 기울여 세움(35°까지) */
-    const lean = Math.atan2(b.x - a.x, a.y - b.y);              // 0이면 똑바로 위
+    /* 서 있는 무늬(대나무·소나무·산 등): 위아래로 끌면 아래쪽 끝을 밑동, 위쪽 끝을 꼭대기로 삼아 그 방향으로 기울여 세움(35°까지).
+       위→아래로 끌어도, 아래→위로 끌어도 같음 */
+    const base = a.y >= b.y ? a : b, top = a.y >= b.y ? b : a;
+    const lean = Math.atan2(top.x - base.x, base.y - top.y);    // 0이면 똑바로 위
     if (Math.abs(lean) <= 1.05) {
       rot = clamp(lean, -0.61, 0.61); flip = false; D = d * 1.05;
-      cx = a.x + Math.sin(rot) * D * 0.45; cy = a.y - Math.cos(rot) * D * 0.45;
+      cx = base.x + Math.sin(rot) * D * 0.45; cy = base.y - Math.cos(rot) * D * 0.45;
     }
   }
   return { D, flip, rot, cx, cy };
@@ -2042,7 +2044,7 @@ state.cat = (MOTIF_BY[state.motif] || {}).cat || 'sky';
 const tabsEl = document.createElement('div'); tabsEl.className = 'tabs'; tabsEl.setAttribute('role', 'tablist');
 const gridEl = document.createElement('div'); gridEl.className = 'grid';
 const tipEl = document.createElement('p'); tipEl.className = 'tip'; tipEl.textContent = '톡 찍기 · 끌면 크기와 방향';
-function setTip() { const m = MOTIF_BY[state.motif] || {}; tipEl.textContent = m.fill ? '끌어서 채울 범위를 정해요' : m.band ? '끌어서 띠 길이와 방향을 정해요' : m.parts ? (m.orient ? '톡 찍기 · 끌면 크기와 방향' : '톡 찍기 · 아래에서 위로 끌면 기울여 세우기') : '테두리를 그려 오려요'; }
+function setTip() { const m = MOTIF_BY[state.motif] || {}; tipEl.textContent = m.fill ? '끌어서 채울 범위를 정해요' : m.band ? '끌어서 띠 길이와 방향을 정해요' : m.parts ? (m.orient ? '톡 찍기 · 끌면 크기와 방향' : '톡 찍기 · 위아래로 끌면 기울여 세우기') : '테두리를 그려 오려요'; }
 shapesEl.append(tabsEl, gridEl, tipEl);
 CATS.forEach(([k, name]) => {
   const t = document.createElement('button'); t.type = 'button'; t.setAttribute('role', 'tab'); t.dataset.cat = k; t.textContent = name;
