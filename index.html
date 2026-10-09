@@ -106,7 +106,7 @@ body {
 #bar button:hover { background: rgba(255,255,255,.05); }
 #bar button:focus-visible { outline: 2px solid var(--pearl); outline-offset: 1px; }
 #bar button svg { width: 24px; height: 24px; flex: none; }
-#bar button .lb { line-height: 1; color: var(--muted); }
+#bar button .lb { line-height: 1; color: var(--muted); white-space: nowrap; letter-spacing: -0.02em; }
 #bar button[aria-pressed="true"] { background: rgba(232, 224, 234, .1); }
 #bar button[aria-pressed="true"] .lb { color: var(--ink); }
 #bar button[aria-pressed="true"]::after {
@@ -202,8 +202,8 @@ body {
     left: 16px; right: auto; margin: 0; width: auto; top: 50%; bottom: auto; transform: translateY(-50%);
     flex-direction: column; flex-wrap: nowrap; padding: 12px 8px; gap: 10px; max-width: none;
   }
-  .grp { display: grid; grid-template-columns: repeat(2, var(--btn)); gap: 4px; }
-  #bar button { min-width: 0; width: var(--btn); }
+  .grp { display: grid; grid-template-columns: repeat(2, minmax(var(--btn), auto)); gap: 4px; }
+  #bar button { min-width: var(--btn); width: auto; padding-inline: 6px; }
   .grp + .grp { padding-left: 0; border-left: 0; padding-top: 10px; border-top: 1px solid var(--panel-line); }
   #bar button { font-size: clamp(12px, 1.4vh, 16px); }
   #bar button svg { width: clamp(24px, 3vh, 34px); height: clamp(24px, 3vh, 34px); }
@@ -1762,6 +1762,7 @@ function techSeams() {
     for (let y = 0; y < bh; y++) { if (A[y * bw + x]) last = y; if (y - last <= e) D[y * bw + x] = 1; }
     last = 1e9; for (let y = bh - 1; y >= 0; y--) { if (A[y * bw + x]) last = y; if (last - y <= e) D[y * bw + x] = 1; } }
   for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+    if (id === TECH.flake) break;                                    // 부스러기는 경계 없이 흩뿌림
     if (!D[y * bw + x]) continue;
     const i = (y + y0) * W + x + x0, k = i * 4;
     if (M[i]) continue;
