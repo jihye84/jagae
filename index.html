@@ -2109,8 +2109,9 @@ function placeShapes() {
 }
 function showShapes() { const was = shapesEl.hidden; shapesEl.hidden = state.tool !== 'lasso'; if (was && !shapesEl.hidden) renderShapes(); else placeShapes(); }
 resize();
+/* 처음 열면 빈 옻칠판으로 시작 (예시 그림은 주소 끝에 #demo 를 붙이면 그려짐) */
 const startDemo = () => { demo = buildDemo(); };
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(startDemo, startDemo); else startDemo();
+if (location.hash === '#demo') { if (document.fonts && document.fonts.ready) document.fonts.ready.then(startDemo, startDemo); else startDemo(); }
 requestAnimationFrame(frame);
 })();
 </script>
