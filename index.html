@@ -60,7 +60,7 @@
   --btn: 48px;
   color-scheme: dark;
 }
-html, body { height: 100%; overflow: hidden; margin: 0; }
+html, body { height: 100%; overflow: hidden; margin: 0; touch-action: none; }
 [hidden] { display: none !important; }
 body {
   background: radial-gradient(ellipse at 50% 40%, #1e1714 0%, #120d0b 75%); color: var(--ink);
@@ -216,7 +216,10 @@ body {
   font-size: 14px; white-space: nowrap; pointer-events: none;
 }
 body.viewing #bar, body.viewing #shapes, body.viewing .brand, body.viewing #hint, body.viewing #reach { display: none !important; }
-body.viewing #gl { cursor: default; }
+body { cursor: crosshair; }
+#bar, #shapes, #viewBtns, #sheet { cursor: default; }
+#shapes .grid, #shapes .tabs { touch-action: pan-x pan-y; }
+body.viewing, body.viewing #gl { cursor: default; }
 #ov { position: fixed; left: 0; top: 0; pointer-events: none; border-radius: 6px; }
 #nogl {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
@@ -1951,8 +1954,12 @@ function widthFactor(e, x, y, t) {
   wfSmooth += (target - wfSmooth) * 0.22;
   return wfSmooth;
 }
-glCanvas.addEventListener('pointerdown', e => {
+/* 옻칠판 바깥(테두리·여백)에서 시작한 획도 받아들인다. 도구 띠·버튼·무늬 창 위는 제외 */
+const UI_SEL = '#bar, #shapes, #viewBtns, #sheet, button, a, input, select, [role="dialog"]';
+const onUI = e => !!(e.target && e.target.closest && e.target.closest(UI_SEL));
+document.addEventListener('pointerdown', e => {
   if (e.button !== undefined && e.button > 0) return;
+  if (onUI(e)) return;
   if (document.body.classList.contains('viewing')) { setLightFromPointer(bx(e), by(e)); return; }
   finishDemo();
   try { glCanvas.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1976,10 +1983,11 @@ function showReach(e) {
   reach.style.transform = 'translate(' + (e.clientX - r) + 'px,' + (e.clientY - r) + 'px)';
   reach.hidden = false;
 }
-glCanvas.addEventListener('pointerleave', () => { if (!drawing) reach.hidden = true; });
-glCanvas.addEventListener('pointerdown', showReach);
+document.documentElement.addEventListener('pointerleave', () => { if (!drawing) reach.hidden = true; });
+document.addEventListener('pointerdown', e => { if (!onUI(e)) showReach(e); });
 glCanvas.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') reach.hidden = true; });
-glCanvas.addEventListener('pointermove', e => {
+document.addEventListener('pointermove', e => {
+  if (!drawing && onUI(e)) { reach.hidden = true; return; }
   showReach(e);
   setLightFromPointer(bx(e), by(e));
   if (!drawing) return;
