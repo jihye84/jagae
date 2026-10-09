@@ -2078,6 +2078,11 @@ document.addEventListener('fullscreenchange', syncFS); document.addEventListener
 // 기본은 늘 전체화면(주소창 숨김). '창 모드'를 직접 고르지 않았다면, 전체화면이 풀려도 다음 손질 때 다시 켬
 const standalone = window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
 let wantFS = canFS && !standalone;
+/* 사용자가 뒤로 가기 등으로 전체화면을 빠져나오면 그 뜻을 따라 다시 들어가지 않음
+   (다시 들어갈 때마다 브라우저가 '전체 화면을 종료하려면…' 안내를 몇 초씩 띄우므로) */
+let wasFS = false;
+const fsWatch = () => { const on = !!fsEl(); if (wasFS && !on) wantFS = false; wasFS = on; };
+document.addEventListener('fullscreenchange', fsWatch); document.addEventListener('webkitfullscreenchange', fsWatch);
 fsBtn.addEventListener('click', () => { wantFS = !fsEl(); }, true);
 window.addEventListener('pointerup', () => { if (wantFS && !fsEl() && sheetEl.classList.contains('gone')) enterFS(); }, true);
 // 시작 화면: 펼치기를 누르면 전체화면 + (아이폰) 기울기 허락을 한 번에
