@@ -2091,7 +2091,8 @@ function setViewing(on) {
 }
 hideBtn.addEventListener('click', () => setViewing(true));
 /* ---------- 사진: 지금 빛 그대로 작품을 크게 찍어 액자 테두리와 낙관을 더해 저장 ---------- */
-let snapping = false;
+let snapping = false, dlCap = null;
+try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(n => { dlCap = n; }, () => {}); } catch (_) {}
 function snapshot() {
   if (snapping) return; snapping = true;
   const fl = document.getElementById('flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
@@ -2123,6 +2124,8 @@ function snapshot() {
   out.toBlob(blob => {
     snapping = false;
     if (!blob) { toast('사진을 만들지 못했어요'); return; }
+    if (dlCap) { dlCap.save({ filename: name, data: blob }).then(r => { if (r.status === 'saved') toast('사진을 저장했어요'); },
+      err => { if (err && err.code !== 'declined') toast('사진을 저장하지 못했어요'); }); return; }
     const file = new File([blob], name, { type: 'image/png' });
     const mobile = matchMedia('(pointer: coarse)').matches;
     if (mobile && navigator.canShare && navigator.canShare({ files: [file] })) {
