@@ -63,7 +63,8 @@
 html, body { height: 100%; overflow: hidden; margin: 0; touch-action: none; }
 [hidden] { display: none !important; }
 body {
-  background: radial-gradient(ellipse at 50% 40%, #1e1714 0%, #120d0b 75%); color: var(--ink);
+  /* 옻칠판 바깥(작업대): 판과 확연히 다른 밝은 오동나무빛 */
+  background: radial-gradient(ellipse at 50% 40%, #5b4c40 0%, #43372e 60%, #352b24 100%); color: var(--ink);
   font-family: var(--font-body); font-size: 14px;
   -webkit-user-select: none; user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -220,6 +221,45 @@ body { cursor: crosshair; }
 #bar, #shapes, #viewBtns, #sheet { cursor: default; }
 #shapes .grid, #shapes .tabs { touch-action: pan-x pan-y; }
 body.viewing, body.viewing #gl { cursor: default; }
+body.viewing { background: #0b0807; }
+body.viewing #barTab, body.viewing #shapesTab, body.viewing #zoomFit { display: none !important; }
+#bar { transition: transform .35s ease, opacity .35s ease; }
+#bar.folded { transform: translateY(calc(100% + 40px)); opacity: 0; pointer-events: none; }
+.fold {
+  position: absolute; left: 50%; top: -15px; width: 52px; height: 26px; margin-left: -26px; padding: 0; border-radius: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--panel-line); background: #241a16; color: var(--muted); z-index: 2;
+}
+.fold:hover, .fold:focus-visible { color: var(--ink); outline: none; }
+.fold svg { width: 20px; height: 20px; }
+#bar .fold { position: absolute; left: 50%; top: -15px; width: 52px; height: 26px; min-width: 0; min-height: 0; margin-left: -26px; padding: 0; border-radius: 13px;
+  border: 1px solid var(--panel-line); background: #241a16; color: var(--muted); }
+#bar .fold:hover { background: #2e221d; }
+#bar .fold svg { width: 20px; height: 20px; }
+#shapes { overflow: visible; }
+.tab {
+  position: fixed; z-index: 25; display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 14px 0 10px; border-radius: 18px; cursor: pointer;
+  border: 1px solid var(--panel-line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.tab svg { width: 18px; height: 18px; }
+#barTab { left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+#shapesTab { left: 50%; transform: translateX(-50%); }
+#zoomFit {
+  position: fixed; z-index: 25; top: calc(env(safe-area-inset-top, 0px) + 12px); right: calc(env(safe-area-inset-right, 0px) + 12px);
+  display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px 0 10px; border-radius: 19px; cursor: pointer;
+  border: 1px solid var(--panel-line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px;
+}
+#zoomFit svg { width: 20px; height: 20px; }
+#zoomFit[hidden], .tab[hidden] { display: none; }
+@media (min-width: 1200px) and (min-aspect-ratio: 16/10) {
+  #bar.folded { transform: translate(calc(-100% - 40px), -50%); }
+  #bar .fold { left: auto; right: -15px; top: 50%; margin: -26px 0 0; width: 26px; height: 52px; min-width: 0; padding: 0; }
+  #bar .fold svg { transform: rotate(90deg); }
+  #barTab { left: 10px; bottom: auto; top: 50%; transform: translateY(-50%); }
+  #barTab svg, #shapesTab svg { transform: rotate(90deg); }
+  #shapesTab { transform: translateY(-50%); top: 50%; }
+}
 #ov { position: fixed; left: 0; top: 0; pointer-events: none; border-radius: 6px; }
 #nogl {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
@@ -271,12 +311,16 @@ body.viewing, body.viewing #gl { cursor: default; }
 <div id="viewBtns" hidden><button id="snapV" class="vbtn" aria-label="작품 사진으로 저장"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2.6l1.6-2.2h5.6L16.4 7H19a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="12.8" r="3.4"/></svg><span>사진</span></button><button id="showTools" class="vbtn" aria-label="도구 꺼내기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 18l3-1 2 2-1 3-4-4z"/><path d="M9 19L20 6a1.6 1.6 0 0 0-2.3-2.2L6.5 16"/></svg><span>도구</span></button></div>
 <div id="flash" aria-hidden="true"></div>
 <div id="toast" aria-live="polite" hidden></div>
+<button id="barTab" class="tab" type="button" aria-label="도구 서랍 열기" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg><span>도구</span></button>
+<button id="shapesTab" class="tab" type="button" aria-label="무늬 서랍 열기" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg><span>무늬</span></button>
+<button id="zoomFit" type="button" aria-label="원래 크기로" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8 11h6"/></svg><span>원래 크기</span></button>
 <div id="reach" aria-hidden="true" hidden></div>
 <div id="shapes" role="group" aria-label="오릴 무늬" hidden></div>
 <header class="brand"><h1>자개 붓</h1><span>검은 옻칠 위 나전</span></header>
 <div id="hint">손가락이나 마우스로 칠해 보세요</div>
 
 <nav id="bar" aria-label="도구">
+  <button class="fold" id="foldBar" type="button" aria-label="도구 서랍 닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
   <div class="grp" role="group" aria-label="붓">
     <button data-tool="shard" aria-pressed="true" aria-label="자개 붓">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 18l3-1 2 2-1 3-4-4z"/><path d="M9 19L20 6a1.6 1.6 0 0 0-2.3-2.2L6.5 16"/><path d="M13 4.5l1 1.2M15.5 9l1 .8M11 13l1.2.6" stroke-linecap="round"/></svg>
@@ -464,10 +508,16 @@ let GW = 0, GH = 0;
 const satProbe = document.createElement('div');
 satProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px)';
 document.body.appendChild(satProbe);
+/* 도구 띠를 서랍에 넣어도 판 크기는 그대로: 마지막으로 펼쳐져 있던 자리를 기억 */
+let lastBarRect = null;
+function barRect() {
+  if (!bar.classList.contains('folded') || !lastBarRect) lastBarRect = bar.getBoundingClientRect();
+  return lastBarRect;
+}
 function boardRect() {
   const vw = window.innerWidth, vh = window.innerHeight, m = vw < 560 ? 8 : 14;
   const st = parseFloat(getComputedStyle(satProbe).paddingTop) || 0;
-  const r = bar.getBoundingClientRect();
+  const r = barRect();
   const g = window.matchMedia('(min-width: 1200px) and (min-aspect-ratio: 16/10)').matches
     ? { x: r.right + m, y: m + st, w: vw - r.right - 2 * m, h: vh - 2 * m - st }
     : { x: m, y: m + st, w: vw - 2 * m, h: Math.max(160, r.top - m - (m + st)) };
@@ -477,15 +527,23 @@ function boardRect() {
   if (w / h > k) w = h * k; else h = w / k;
   return { x: g.x + (g.w - w) / 2, y: g.y + (g.h - h) / 2, w, h };
 }
-function placeBoard() {
+/* 핀치(두 손가락)·휠로 키운 배율과 위치. 1이면 판이 제자리 */
+const zoom = { s: 1, dx: 0, dy: 0 };
+function boardCss() {
+  const dw = board.w * board.s, dh = board.h * board.s;
+  for (const c of [glCanvas, ov]) { c.style.left = board.dx + 'px'; c.style.top = board.dy + 'px'; c.style.width = dw + 'px'; c.style.height = dh + 'px'; }
+  const zf = document.getElementById('zoomFit'); if (zf) zf.hidden = !(zoom.s > 1.01) || document.body.classList.contains('viewing');
+}
+function placeBoard(cssOnly) {
   const viewing = document.body.classList.contains('viewing');
   const vw = window.innerWidth, vh = window.innerHeight, m = vw < 560 ? 6 : 16;
   if (viewing) {
     board.s = Math.min((vw - 2 * m) / board.w, (vh - 2 * m) / board.h);
     board.dx = (vw - board.w * board.s) / 2; board.dy = (vh - board.h * board.s) / 2;
-  } else { board.s = 1; board.dx = board.x; board.dy = board.y; }
-  const dw = board.w * board.s, dh = board.h * board.s;
-  for (const c of [glCanvas, ov]) { c.style.left = board.dx + 'px'; c.style.top = board.dy + 'px'; c.style.width = dw + 'px'; c.style.height = dh + 'px'; }
+  } else if (zoom.s > 1) { board.s = zoom.s; board.dx = zoom.dx; board.dy = zoom.dy; }
+  else { board.s = 1; board.dx = board.x; board.dy = board.y; }
+  boardCss();
+  if (cssOnly) return;
   let gs = board.s;
   if (W * H * gs * gs > 6e6) gs = Math.sqrt(6e6 / (W * H));
   const nGW = Math.max(1, Math.round(W * gs)), nGH = Math.max(1, Math.round(H * gs));
@@ -494,7 +552,7 @@ function placeBoard() {
 /* 화면 좌표 → 옻칠판 안 좌표(css px) */
 const bx = e => (e.clientX - board.dx) / board.s, by = e => (e.clientY - board.dy) / board.s;
 function resize() {
-  if (!document.body.classList.contains('viewing')) { const r = boardRect(); board.x = r.x; board.y = r.y; board.w = Math.max(100, r.w); board.h = Math.max(100, r.h); }
+  if (!document.body.classList.contains('viewing')) { const r = boardRect(); board.x = r.x; board.y = r.y; board.w = Math.max(100, r.w); board.h = Math.max(100, r.h); zoom.s = 1; }
   cssW = Math.round(board.w); cssH = Math.round(board.h);
   let d = Math.min(window.devicePixelRatio || 1, 2);
   const maxPx = 4.2e6;
@@ -1957,9 +2015,67 @@ function widthFactor(e, x, y, t) {
 /* 옻칠판 바깥(테두리·여백)에서 시작한 획도 받아들인다. 도구 띠·버튼·무늬 창 위는 제외 */
 const UI_SEL = '#bar, #shapes, #viewBtns, #sheet, button, a, input, select, [role="dialog"]';
 const onUI = e => !!(e.target && e.target.closest && e.target.closest(UI_SEL));
+/* ---------- 두 손가락 핀치: 판 확대·축소와 옮기기 (그리던 획은 취소) ---------- */
+const pts = new Map();
+let pinch = null, pinchHold = false;
+function clampZoom() {
+  zoom.s = clamp(zoom.s, 1, 6);
+  if (zoom.s <= 1.001) { zoom.s = 1; zoom.dx = board.x; zoom.dy = board.y; return; }
+  const dw = board.w * zoom.s, dh = board.h * zoom.s;
+  zoom.dx = clamp(zoom.dx, board.x + board.w - dw, board.x);
+  zoom.dy = clamp(zoom.dy, board.y + board.h - dh, board.y);
+}
+function zoomAt(cx, cy, s) {
+  const b0 = board.s, ux = (cx - board.dx) / b0, uy = (cy - board.dy) / b0;
+  zoom.s = s; zoom.dx = cx - ux * s; zoom.dy = cy - uy * s; clampZoom();
+}
+function abortStroke() {
+  if (!drawing) return;
+  drawing = false; st = null; FILL_R = 255;
+  undo(); clearOverlay(); reach.hidden = true; dirty = true;
+}
+document.addEventListener('pointerdown', e => {
+  if (onUI(e) || document.body.classList.contains('viewing') || e.pointerType === 'mouse') return;
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pts.size === 2) {
+    abortStroke();
+    const [a, b] = [...pts.values()];
+    pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, s0: board.s, dx0: board.dx, dy0: board.dy };
+    pinchHold = true;
+  }
+  if (pts.size >= 2 || pinchHold) e.stopImmediatePropagation();
+});
+document.addEventListener('pointermove', e => {
+  if (!pts.has(e.pointerId)) return;
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && pts.size >= 2) {
+    const [a, b] = [...pts.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const s = clamp(pinch.s0 * d / pinch.d0, 1, 6);
+    const ux = (pinch.mx - pinch.dx0) / pinch.s0, uy = (pinch.my - pinch.dy0) / pinch.s0;
+    zoom.s = s; zoom.dx = mx - ux * s; zoom.dy = my - uy * s; clampZoom();
+    placeBoard(true);
+  }
+  if (pinchHold) e.stopImmediatePropagation();
+});
+function ptrEnd(e) {
+  if (!pts.delete(e.pointerId)) return;
+  if (pinch && pts.size < 2) { pinch = null; placeBoard(); }
+  if (pts.size === 0) pinchHold = false;
+}
+document.addEventListener('pointerup', ptrEnd, true); document.addEventListener('pointercancel', ptrEnd, true);
+/* 마우스 휠·트랙패드 집기: 커서 자리를 중심으로 확대·축소 */
+let wheelT = 0;
+document.addEventListener('wheel', e => {
+  if (onUI(e) || document.body.classList.contains('viewing')) return;
+  e.preventDefault();
+  zoomAt(e.clientX, e.clientY, clamp(board.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), 1, 6));
+  placeBoard(true); clearTimeout(wheelT); wheelT = setTimeout(() => placeBoard(), 160);
+}, { passive: false });
+document.getElementById('zoomFit').addEventListener('click', () => { zoom.s = 1; placeBoard(); });
 document.addEventListener('pointerdown', e => {
   if (e.button !== undefined && e.button > 0) return;
-  if (onUI(e)) return;
+  if (onUI(e) || pinch || pinchHold) return;
   if (document.body.classList.contains('viewing')) { setLightFromPointer(bx(e), by(e)); return; }
   finishDemo();
   try { glCanvas.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1978,7 +2094,7 @@ document.addEventListener('pointerdown', e => {
 const reach = document.getElementById('reach');
 function showReach(e) {
   if (state.tool !== 'flake' || (e.pointerType !== 'mouse' && !drawing)) { reach.hidden = true; return; }
-  const r = sizeNow() * 0.75;
+  const r = sizeNow() * 0.75 * board.s;
   reach.style.width = reach.style.height = (2 * r) + 'px';
   reach.style.transform = 'translate(' + (e.clientX - r) + 'px,' + (e.clientY - r) + 'px)';
   reach.hidden = false;
@@ -2363,13 +2479,35 @@ gridEl.addEventListener('click', e => {
   gridEl.querySelectorAll('.tile').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
 });
 renderShapes();
+/* ---------- 서랍: 도구 띠와 무늬 창을 따로 접어 내리기 ---------- */
+var barTab = document.getElementById('barTab'), shapesTab = document.getElementById('shapesTab');
+var barFolded = false, shapesFolded = false;
+const foldShapesBtn = document.createElement('button');
+foldShapesBtn.type = 'button'; foldShapesBtn.className = 'fold'; foldShapesBtn.setAttribute('aria-label', '무늬 서랍 닫기');
+foldShapesBtn.innerHTML = document.getElementById('foldBar').innerHTML;
+shapesEl.prepend(foldShapesBtn);
 function placeShapes() {
-  if (shapesEl.hidden) return;
-  const r = bar.getBoundingClientRect();
-  if (wideMQ.matches) { shapesEl.style.left = (r.right + 10) + 'px'; shapesEl.style.bottom = ''; }
-  else { shapesEl.style.left = ''; shapesEl.style.bottom = (window.innerHeight - r.top + 8) + 'px'; }
+  const r = barFolded ? barTab.getBoundingClientRect() : bar.getBoundingClientRect();
+  for (const el of [shapesEl, shapesTab]) { if (!el) continue;
+    if (el.hidden) continue;
+    if (wideMQ.matches) { el.style.left = (r.right + 10) + 'px'; el.style.bottom = ''; }
+    else { el.style.left = el === shapesTab ? '50%' : ''; el.style.bottom = (window.innerHeight - r.top + (barFolded ? 10 : 24)) + 'px'; }
+  }
 }
-function showShapes() { const was = shapesEl.hidden; shapesEl.hidden = state.tool !== 'lasso'; if (was && !shapesEl.hidden) renderShapes(); else placeShapes(); }
+function showShapes() {
+  const on = state.tool === 'lasso', was = shapesEl.hidden;
+  shapesEl.hidden = !on || shapesFolded; shapesTab.hidden = !on || !shapesFolded;
+  if (was && !shapesEl.hidden) renderShapes(); placeShapes();
+}
+function setBarFolded(f) {
+  barRect(); barFolded = f; bar.classList.toggle('folded', f); barTab.hidden = !f;
+  if (f) reach.hidden = true;
+  placeShapes(); setTimeout(placeShapes, 360);
+}
+document.getElementById('foldBar').addEventListener('click', e => { e.stopPropagation(); setBarFolded(true); });
+barTab.addEventListener('click', () => setBarFolded(false));
+foldShapesBtn.addEventListener('click', () => { shapesFolded = true; showShapes(); });
+shapesTab.addEventListener('click', () => { shapesFolded = false; showShapes(); });
 resize();
 /* 처음 열면 빈 옻칠판으로 시작 (예시 그림은 주소 끝에 #demo 를 붙이면 그려짐) */
 const startDemo = () => { demo = buildDemo(); };
