@@ -1375,16 +1375,23 @@ function motifGeom() {
   const a = st.start, b = st.cur || st.start;
   const d = Math.hypot(b.x - a.x, b.y - a.y);
   const dragged = d >= 10 * DPR;
-  const D = dragged ? d * 2.1 : Math.max(76 * DPR, st.s * 3);
-  const flip = dragged && b.x < a.x;
-  /* 새·나비·구름처럼 방향이 있는 무늬는 끈 방향으로 기울어진다(위아래 60°까지) */
-  let rot = 0;
-  if (dragged && MOTIF_BY[st.motif].orient) {
+  const m = MOTIF_BY[st.motif];
+  let D = dragged ? d * 2.1 : Math.max(76 * DPR, st.s * 3);
+  let flip = dragged && b.x < a.x, rot = 0, cx = a.x, cy = a.y;
+  if (dragged && m.orient) {
+    /* 새·나비·구름처럼 방향이 있는 무늬는 끈 방향으로 기울어진다(위아래 60°까지) */
     const ang = Math.atan2(b.y - a.y, b.x - a.x);
     rot = flip ? ang - Math.PI * Math.sign(ang || 1) : ang;
     rot = clamp(rot, -1.05, 1.05);
+  } else if (dragged) {
+    /* 서 있는 무늬(대나무·소나무·산 등): 아래에서 위로 끌면 누른 자리에 밑동을 두고, 끈 방향으로 기울여 세움(35°까지) */
+    const lean = Math.atan2(b.x - a.x, a.y - b.y);              // 0이면 똑바로 위
+    if (Math.abs(lean) <= 1.05) {
+      rot = clamp(lean, -0.61, 0.61); flip = false; D = d * 1.05;
+      cx = a.x + Math.sin(rot) * D * 0.45; cy = a.y - Math.cos(rot) * D * 0.45;
+    }
   }
-  return { D, flip, rot };
+  return { D, flip, rot, cx, cy };
 }
 
 /* 깨진 자개 조각 하나(할패) */
@@ -1567,7 +1574,7 @@ function add(x, y, wf) {
   if (st.tool === 'lasso' && st.motif) {
     if (!st.start) st.start = p;
     st.cur = p; st.last = p;
-    if (!st.silent) { clearOverlay(); const mm = MOTIF_BY[st.motif]; if (mm.fill) stampFill(mm, fillGeom(), st.B, true); else if (mm.band) stampBand(mm, bandGeom(), st.B, true); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, true, g.rot); } }
+    if (!st.silent) { clearOverlay(); const mm = MOTIF_BY[st.motif]; if (mm.fill) stampFill(mm, fillGeom(), st.B, true); else if (mm.band) stampBand(mm, bandGeom(), st.B, true); else { const g = motifGeom(); stampMotif(mm, g.cx, g.cy, g.D, g.flip, st.B, true, g.rot); } }
     return;
   }
   if (st.tool === 'lasso') {
@@ -1710,7 +1717,7 @@ function tapDisc() {
 }
 function end() {
   if (st && st.last && st.len < 4 * DPR && (st.tool === 'slab' || st.tool === 'shard')) tapDisc();
-  if (st && st.tool === 'lasso' && st.motif && st.start) { const mm = MOTIF_BY[st.motif]; if (mm.fill) stampFill(mm, fillGeom(), st.B, false); else if (mm.band) stampBand(mm, bandGeom(), st.B, false); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, false, g.rot); } clearOverlay(); }
+  if (st && st.tool === 'lasso' && st.motif && st.start) { const mm = MOTIF_BY[st.motif]; if (mm.fill) stampFill(mm, fillGeom(), st.B, false); else if (mm.band) stampBand(mm, bandGeom(), st.B, false); else { const g = motifGeom(); stampMotif(mm, g.cx, g.cy, g.D, g.flip, st.B, false, g.rot); } clearOverlay(); }
   else if (st && st.tool === 'lasso') { slab(st.silent ? st.pts : tidyLoop(st.pts), st.B, st.ph); clearOverlay(); }
   if (st && st.tool === 'strip' && st.inStrip && st.last && st.stripStart) drawStrip(st.stripStart, st.last);
   techSeams();
@@ -2035,7 +2042,7 @@ state.cat = (MOTIF_BY[state.motif] || {}).cat || 'sky';
 const tabsEl = document.createElement('div'); tabsEl.className = 'tabs'; tabsEl.setAttribute('role', 'tablist');
 const gridEl = document.createElement('div'); gridEl.className = 'grid';
 const tipEl = document.createElement('p'); tipEl.className = 'tip'; tipEl.textContent = '톡 찍기 · 끌면 크기와 방향';
-function setTip() { const m = MOTIF_BY[state.motif] || {}; tipEl.textContent = m.fill ? '끌어서 채울 범위를 정해요' : m.band ? '끌어서 띠 길이와 방향을 정해요' : m.parts ? '톡 찍기 · 끌면 크기와 방향' : '테두리를 그려 오려요'; }
+function setTip() { const m = MOTIF_BY[state.motif] || {}; tipEl.textContent = m.fill ? '끌어서 채울 범위를 정해요' : m.band ? '끌어서 띠 길이와 방향을 정해요' : m.parts ? (m.orient ? '톡 찍기 · 끌면 크기와 방향' : '톡 찍기 · 아래에서 위로 끌면 기울여 세우기') : '테두리를 그려 오려요'; }
 shapesEl.append(tabsEl, gridEl, tipEl);
 CATS.forEach(([k, name]) => {
   const t = document.createElement('button'); t.type = 'button'; t.setAttribute('role', 'tab'); t.dataset.cat = k; t.textContent = name;
