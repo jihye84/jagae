@@ -414,6 +414,7 @@ function resize() {
   dx.fillStyle = '#000'; dx.fillRect(0, 0, W, H);
   if (old) dx.drawImage(old, 0, 0, W, H);
   undoStack.length = 0;
+  tech = new Uint8Array(W * H);
   gl.viewport(0, 0, W, H);
   dirty = true;
 }
@@ -427,7 +428,9 @@ function gFor(ph) {
   return d * 32 + 4 + Math.min(23, Math.floor((f - Math.floor(f)) * 24));
 }
 function phFromG(g) { const d = g >> 5; return (d + clamp(((g & 31) - 4) / 24, 0, 1)) / 8 + 1 / 384; }
-function fillFor(ph, B, r) { return 'rgb(' + r + ',' + gFor(ph) + ',' + B + ')'; }
+/* 지금 붙이는 자개는 R=254로 표시해 두었다가 획이 끝나면 255로 되돌림 (경계 계산용) */
+let FILL_R = 255;
+function fillFor(ph, B, r) { return 'rgb(' + (r === 255 ? FILL_R : r) + ',' + gFor(ph) + ',' + B + ')'; }
 
 /* ---------- 나전 무늬 본(本): 0~100 칸 안의 조각들. 조각마다 따로 오린 자개가 되고, carve는 선각 ---------- */
 const TAU = Math.PI * 2;
@@ -1677,29 +1680,6 @@ function slabMatch(c, r) {
     }
   }
 }
-function slabSeams() {
-  if (!st.segs.length) return;
-  const e = Math.max(2, 2.4 * DPR);
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  st.segs.forEach(g => [g.a, g.b].forEach(q => { const r = g.w / 2 + e + 2; x0 = Math.min(x0, q.x - r); y0 = Math.min(y0, q.y - r); x1 = Math.max(x1, q.x + r); y1 = Math.max(y1, q.y + r); }));
-  x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(W, Math.ceil(x1)); y1 = Math.min(H, Math.ceil(y1));
-  const bw = x1 - x0, bh = y1 - y0;
-  if (bw < 1 || bh < 1) return;
-  tcv.width = bw; tcv.height = bh;
-  tcx.translate(-x0, -y0);
-  st.segs.forEach(g => {
-    tcx.beginPath();
-    if (Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y) < 0.5) { tcx.arc(g.b.x, g.b.y, g.w / 2 + e, 0, Math.PI * 2); tcx.fillStyle = '#fff'; tcx.fill(); return; }
-    tcx.moveTo(g.a.x, g.a.y); tcx.lineTo(g.b.x, g.b.y); tcx.lineCap = 'round'; tcx.lineWidth = g.w + 2 * e; tcx.strokeStyle = '#fff'; tcx.stroke();
-  });
-  const outer = tcx.getImageData(0, 0, bw, bh).data, own = smx.getImageData(x0, y0, bw, bh).data;
-  const im = dx.getImageData(x0, y0, bw, bh), d = im.data;
-  let changed = false;
-  for (let i = 0; i < d.length; i += 4) {
-    if (outer[i + 3] && own[i + 3] < 200 && d[i] > 100 && Math.abs(d[i + 2] - st.B) >= 40) { d[i] = 0; changed = true; }
-  }
-  if (changed) dx.putImageData(im, x0, y0);
-}
 function flakeAt(x, y) {
   const rad = st.s * 0.75;
   const k = Math.max(1, Math.round(st.s / (14 * DPR)));
@@ -1732,21 +1712,66 @@ function end() {
   if (st && st.tool === 'lasso' && st.motif && st.start) { const mm = MOTIF_BY[st.motif]; if (mm.fill) stampFill(mm, fillGeom(), st.B, false); else if (mm.band) stampBand(mm, bandGeom(), st.B, false); else { const g = motifGeom(); stampMotif(mm, st.start.x, st.start.y, g.D, g.flip, st.B, false, g.rot); } clearOverlay(); }
   else if (st && st.tool === 'lasso') { slab(st.silent ? st.pts : tidyLoop(st.pts), st.B, st.ph); clearOverlay(); }
   if (st && st.tool === 'strip' && st.inStrip && st.last && st.stripStart) drawStrip(st.stripStart, st.last);
-  if (st && st.tool === 'slab') slabSeams();
+  techSeams();
   st = null; dirty = true;
 }
 
 /* ---------- 되돌리기 ---------- */
+/* 기법 지도: 픽셀마다 어떤 기법으로 붙였는지 (0 모름, 1 자개 붓, 2 통자개, 3 끊음질, 4 부스러기, 5 오리기) */
+const TECH = { shard: 1, slab: 2, strip: 3, flake: 4, lasso: 5 };
+let tech = new Uint8Array(1);
 const undoStack = [];
 function pushUndo() {
-  try { undoStack.push(dx.getImageData(0, 0, W, H)); } catch (e) {}
+  try { undoStack.push({ d: dx.getImageData(0, 0, W, H), t: tech.slice() }); } catch (e) {}
   if (undoStack.length > 12) undoStack.shift();
 }
 function undo() {
   const im = undoStack.pop();
-  if (im && im.width === W && im.height === H) { dx.putImageData(im, 0, 0); dirty = true; }
+  if (im && im.d.width === W && im.d.height === H) { dx.putImageData(im.d, 0, 0); if (im.t.length === tech.length) tech = im.t; dirty = true; }
 }
-function clearAll() { pushUndo(); dx.fillStyle = '#000'; dx.fillRect(0, 0, W, H); dirty = true; }
+function clearAll() { pushUndo(); dx.fillStyle = '#000'; dx.fillRect(0, 0, W, H); tech.fill(0); dirty = true; }
+
+/* 기법 경계: 새로 붙인 자개가 다른 기법(또는 다른 자개)의 자개 위에 겹치면, 그 둘레를 따라 옻 선을 둘러 오린 조각처럼.
+   같은 자개의 통자개끼리는 한 덩어리로 이어지므로 경계를 두지 않음 */
+function techSeams() {
+  FILL_R = 255;
+  if (!st || !st.before || !TECH[st.tool]) return;
+  const old = st.before.d.data, oldT = st.before.t;
+  if (old.length !== W * H * 4 || oldT.length !== W * H) return;
+  const nowIm = dx.getImageData(0, 0, W, H), now = nowIm.data;
+  const id = TECH[st.tool], B = st.B, n = W * H;
+  const M = new Uint8Array(n);
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let i = 0, k = 0; i < n; i++, k += 4) {
+    if (now[k] === 254) {
+      M[i] = 1; const x = i % W, y = (i / W) | 0;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) return;
+  const e = Math.max(2, Math.round(2.2 * DPR));
+  x0 = Math.max(0, x0 - e); y0 = Math.max(0, y0 - e); x1 = Math.min(W - 1, x1 + e); y1 = Math.min(H - 1, y1 + e);
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+  // 새 조각 자리를 e만큼 넓힘 (가로 → 세로)
+  const A = new Uint8Array(bw * bh), D = new Uint8Array(bw * bh);
+  for (let y = 0; y < bh; y++) { let last = -1e9; const row = (y + y0) * W + x0;
+    for (let x = 0; x < bw; x++) { if (M[row + x]) last = x; if (x - last <= e) A[y * bw + x] = 1; }
+    last = 1e9; for (let x = bw - 1; x >= 0; x--) { if (M[row + x]) last = x; if (last - x <= e) A[y * bw + x] = 1; } }
+  for (let x = 0; x < bw; x++) { let last = -1e9;
+    for (let y = 0; y < bh; y++) { if (A[y * bw + x]) last = y; if (y - last <= e) D[y * bw + x] = 1; }
+    last = 1e9; for (let y = bh - 1; y >= 0; y--) { if (A[y * bw + x]) last = y; if (last - y <= e) D[y * bw + x] = 1; } }
+  for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+    if (!D[y * bw + x]) continue;
+    const i = (y + y0) * W + x + x0, k = i * 4;
+    if (M[i]) continue;
+    if (old[k] < 200 || now[k] < 200) continue;                     // 밑에 자개가 있던 자리만
+    const sameShell = Math.abs(old[k + 2] - B) < 40;
+    if (oldT[i] === id && sameShell) continue;                       // 같은 기법·같은 자개는 이어짐
+    now[k] = 0;
+  }
+  for (let i = 0; i < n; i++) if (M[i]) { tech[i] = id; now[i * 4] = 255; }
+  dx.putImageData(nowIm, 0, 0, x0, y0, bw, bh);
+}
 
 /* ---------- 빛 ---------- */
 const light = { x: 0.3, y: 0.4, tx: 0.3, ty: 0.4 };
@@ -1778,6 +1803,8 @@ glCanvas.addEventListener('pointerdown', e => {
   if (!userDrew) { userDrew = true; hint.classList.add('gone'); }
   pushUndo();
   begin(state.tool, state.shell, sizeNow());
+  st.before = undoStack[undoStack.length - 1];
+  if (st.before && TECH[state.tool]) FILL_R = 254;
   if (state.tool === 'lasso' && state.motif !== 'free') st.motif = state.motif;
   lastT = e.timeStamp; lastCss = { x: e.clientX, y: e.clientY };
   add(e.clientX * DPR, e.clientY * DPR, 1);
