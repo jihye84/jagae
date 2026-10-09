@@ -1760,7 +1760,7 @@ let ovDirty = false;
 function clearOverlay() {
   const n = document.createElement('canvas');
   n.id = 'ov'; n.setAttribute('aria-hidden', 'true'); n.width = W; n.height = H;
-  n.style.cssText = ov.style.cssText;
+  n.style.cssText = ov.style.cssText; n.style.opacity = '';
   ov.replaceWith(n); ov = n; ox = n.getContext('2d');
   ovDirty = false;
 }
@@ -2179,9 +2179,21 @@ document.addEventListener('pointermove', e => {
     const wf = widthFactor(ev, bx(ev), by(ev), ev.timeStamp);
     add(bx(ev) * DPR, by(ev) * DPR, wf);
     lastT = ev.timeStamp; lastCss = { x: bx(ev), y: by(ev) };
+    ov.style.opacity = stampOut(lastCss.x, lastCss.y) ? '.3' : '';   // 놓으면 취소될 자리: 미리보기를 흐리게
   }
 });
-function stop() { if (drawing) { drawing = false; end(); } }
+/* 오리기 무늬를 판 밖으로 끌어내 놓으면 아무 일도 없던 것처럼 취소 */
+function stampOut(x, y) {
+  if (!st || st.tool !== 'lasso' || !st.motif) return false;
+  const mm = MOTIF_BY[st.motif]; if (!mm || mm.fill || mm.band) return false;   // 물결 채우기·띠는 판 끝까지 끌어 쓰므로 제외
+  const m = 2;
+  return x < -m || y < -m || x > cssW + m || y > cssH + m;
+}
+function stop(e) {
+  if (!drawing) return;
+  if (e && e.type === 'pointerup' && stampOut(bx(e), by(e))) { abortStroke(); toast('판 밖에 놓아서 취소했어요'); return; }
+  drawing = false; end(); ov.style.opacity = '';
+}
 glCanvas.addEventListener('pointerup', stop);
 glCanvas.addEventListener('pointercancel', stop);
 glCanvas.addEventListener('lostpointercapture', stop);
