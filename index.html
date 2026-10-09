@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>자개 붓</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="자개 붓">
+<meta name="theme-color" content="#0c0908">
+<link rel="manifest" href="manifest.json">
 <script>
 /* 카카오톡·네이버·페이스북·인스타그램 등 인앱 브라우저에서 열리면 기본 브라우저로 다시 열기 */
 (function () {
@@ -174,6 +180,21 @@ body {
   border: 2px dashed rgba(232, 224, 234, .9); background: rgba(232, 224, 234, .08);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
 }
+#showTools {
+  position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 30;
+  display: flex; align-items: center; gap: 6px; height: 48px; padding: 0 16px 0 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--panel-line); background: var(--panel); color: var(--ink); font: inherit; font-size: 14px;
+  opacity: .45; transition: opacity .3s ease; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+#showTools:hover, #showTools:focus-visible { opacity: 1; outline: none; }
+#showTools svg { width: 22px; height: 22px; }
+#toast {
+  position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30;
+  padding: 10px 18px; border-radius: 999px; background: var(--panel); border: 1px solid var(--panel-line); color: var(--ink);
+  font-size: 14px; white-space: nowrap; pointer-events: none;
+}
+body.viewing #bar, body.viewing #shapes, body.viewing .brand, body.viewing #hint, body.viewing #reach { display: none !important; }
+body.viewing #gl { cursor: default; }
 #ov { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #nogl {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
@@ -216,6 +237,8 @@ body {
 
 <canvas id="gl" aria-label="옻칠 그림판"></canvas>
 <canvas id="ov" aria-hidden="true"></canvas>
+<button id="showTools" aria-label="도구 꺼내기" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 18l3-1 2 2-1 3-4-4z"/><path d="M9 19L20 6a1.6 1.6 0 0 0-2.3-2.2L6.5 16"/></svg><span>도구</span></button>
+<div id="toast" aria-live="polite" hidden></div>
 <div id="reach" aria-hidden="true" hidden></div>
 <div id="shapes" role="group" aria-label="오릴 무늬" hidden></div>
 <header class="brand"><h1>자개 붓</h1><span>검은 옻칠 위 나전</span></header>
@@ -261,6 +284,12 @@ body {
     <button id="clear" aria-label="초기화 (두 번 누르기)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9l8 6M16 9l-8 6" stroke-linecap="round" opacity=".55"/></svg>
       <span class="lb">초기화</span></button>
+    <button id="fs" aria-label="전체화면">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      <span class="lb">전체화면</span></button>
+    <button id="hideTools" aria-label="도구를 서랍에 넣고 작품 감상">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="lb">감상</span></button>
   </div>
 </nav>
 
@@ -401,17 +430,24 @@ function resize() {
   if (cssW * cssH * d * d > maxPx) d = Math.sqrt(maxPx / (cssW * cssH));
   const nW = Math.max(1, Math.round(cssW * d)), nH = Math.max(1, Math.round(cssH * d));
   if (nW === W && nH === H) return;
-  let old = null;
-  if (W && H) { old = document.createElement('canvas'); old.width = W; old.height = H; old.getContext('2d').drawImage(data, 0, 0); }
+  let old = null, oldT = null, oW = W, oH = H;
+  if (W && H) { old = document.createElement('canvas'); old.width = W; old.height = H; old.getContext('2d').drawImage(data, 0, 0); oldT = tech; }
   DPR = d; W = nW; H = nH;
   glCanvas.width = W; glCanvas.height = H;
   ov.width = W; ov.height = H;
   data.width = W; data.height = H;
   sm.width = W; sm.height = H;
   dx.fillStyle = '#000'; dx.fillRect(0, 0, W, H);
-  if (old) dx.drawImage(old, 0, 0, W, H);
-  undoStack.length = 0;
   tech = new Uint8Array(W * H);
+  if (old) {
+    // 주소창이 사라지거나 화면을 돌려도 그림이 늘어나지 않게: 가운데에 그대로 두고, 화면이 작아질 때만 비율 그대로 줄임
+    const s = Math.min(1, W / oW, H / oH), pw = Math.round(oW * s), ph = Math.round(oH * s);
+    const ox0 = Math.round((W - pw) / 2), oy0 = Math.round((H - ph) / 2);
+    dx.drawImage(old, ox0, oy0, pw, ph);
+    if (oldT && oldT.length === oW * oH) for (let y = 0; y < ph; y++) { const sy = Math.min(oH - 1, (y / s) | 0), Y = y + oy0; if (Y < 0 || Y >= H) continue;
+      for (let x = 0; x < pw; x++) { const X = x + ox0; if (X < 0 || X >= W) continue; tech[Y * W + X] = oldT[sy * oW + Math.min(oW - 1, (x / s) | 0)]; } }
+  }
+  undoStack.length = 0;
   gl.viewport(0, 0, W, H);
   dirty = true;
 }
@@ -1808,6 +1844,7 @@ function widthFactor(e, x, y, t) {
 }
 glCanvas.addEventListener('pointerdown', e => {
   if (e.button !== undefined && e.button > 0) return;
+  if (document.body.classList.contains('viewing')) { setLightFromPointer(e.clientX, e.clientY); return; }
   finishDemo();
   try { glCanvas.setPointerCapture(e.pointerId); } catch (_) {}
   drawing = true; wfSmooth = 1; lastCss = null;
@@ -1906,6 +1943,35 @@ if ('DeviceOrientationEvent' in window) {
     window.addEventListener('deviceorientation', onOrient);
   }
 }
+
+/* ---------- 전체화면 · 감상(도구 서랍) ---------- */
+const fsBtn = document.getElementById('fs'), hideBtn = document.getElementById('hideTools'), showBtn = document.getElementById('showTools'), toastEl = document.getElementById('toast');
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+const canFS = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+function enterFS() {
+  const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!f || fsEl()) return;
+  try { const r = f.call(el, { navigationUI: 'hide' }); if (r && r.catch) r.catch(() => {}); } catch (_) {}
+}
+function exitFS() { const f = document.exitFullscreen || document.webkitExitFullscreen; if (f && fsEl()) try { const r = f.call(document); if (r && r.catch) r.catch(() => {}); } catch (_) {} }
+function syncFS() { const on = !!fsEl(); fsBtn.querySelector('.lb').textContent = on ? '창 모드' : '전체화면'; fsBtn.setAttribute('aria-label', on ? '전체화면 끝내기' : '전체화면'); }
+if (!canFS || window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) fsBtn.hidden = true;
+fsBtn.addEventListener('click', () => { fsEl() ? exitFS() : enterFS(); });
+document.addEventListener('fullscreenchange', syncFS); document.addEventListener('webkitfullscreenchange', syncFS);
+// 처음 화면을 만지고 손을 떼면 저절로 전체화면 (주소창 숨김). 이후에는 단추로 켜고 끔
+let autoFS = canFS;
+window.addEventListener('pointerup', () => { if (autoFS) { autoFS = false; enterFS(); } }, true);
+let toastT = 0;
+function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { toastEl.hidden = true; }, 2600); }
+function setViewing(on) {
+  document.body.classList.toggle('viewing', on);
+  showBtn.hidden = !on;
+  if (on) { reach.hidden = true; clearOverlay(); toast('작품 감상 중 · 오른쪽 아래 「도구」로 다시 꺼내요'); enterFS(); }
+  else toastEl.hidden = true;
+}
+hideBtn.addEventListener('click', () => setViewing(true));
+showBtn.addEventListener('click', () => setViewing(false));
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('viewing')) setViewing(false); });
 
 /* ---------- 첫 화면: 달과 매화 가지 ---------- */
 let demo = null;

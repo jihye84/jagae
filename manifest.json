@@ -1,0 +1,13 @@
+{
+  "name": "자개 붓",
+  "short_name": "자개 붓",
+  "description": "검은 옻칠 위에 나전칠기를 붓칠하듯 그리는 드로잉 웹앱",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#0c0908",
+  "theme_color": "#0c0908",
+  "lang": "ko"
+}
