@@ -86,7 +86,7 @@ body {
 .brand span { color: var(--muted); font-size: clamp(11px, 1.5vh, 15px); letter-spacing: .04em; }
 
 #hint {
-  position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 54px); transform: translateX(-50%);
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 66px); transform: translateX(-50%);
   padding: 8px 16px; border-radius: 999px; background: var(--panel); border: 1px solid var(--panel-line);
   color: var(--ink); font-size: clamp(13px, 1.8vh, 18px); pointer-events: none; white-space: nowrap;
   transition: opacity .6s ease;
@@ -236,7 +236,7 @@ body { cursor: crosshair; }
 #shapes .grid, #shapes .tabs { touch-action: pan-x pan-y; }
 body.viewing, body.viewing #gl { cursor: default; }
 body.viewing { background: #0b0807; }
-body.viewing #barTab, body.viewing #shapesTab, body.viewing #zoomFit { display: none !important; }
+body.viewing #barTab, body.viewing #shapesTab, body.viewing #topR { display: none !important; }
 #bar { transition: transform .35s ease, opacity .35s ease; }
 #bar.folded { transform: translateY(calc(100% + 40px)); opacity: 0; pointer-events: none; }
 .fold {
@@ -259,11 +259,24 @@ body.viewing #barTab, body.viewing #shapesTab, body.viewing #zoomFit { display: 
 .tab svg { width: 18px; height: 18px; }
 #barTab { left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
 #shapesTab { left: 50%; transform: translateX(-50%); }
+#topR {
+  position: fixed; z-index: 26; top: calc(env(safe-area-inset-top, 0px) + 10px); right: calc(env(safe-area-inset-right, 0px) + 10px);
+  display: flex; align-items: center; gap: 8px;
+}
+#topR .ur { display: flex; border-radius: 22px; overflow: hidden; border: 1px solid var(--panel-line); background: var(--panel);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+#topR .ur button { appearance: none; width: 48px; height: 44px; border: 0; background: transparent; color: var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#topR .ur button + button { border-left: 1px solid var(--panel-line); }
+#topR .ur button:hover:not(:disabled) { background: rgba(255, 255, 255, .07); }
+#topR .ur button:active:not(:disabled) { background: rgba(255, 255, 255, .14); }
+#topR .ur button:disabled { color: rgba(239, 231, 222, .28); cursor: default; }
+#topR .ur button:focus-visible { outline: 2px solid var(--pearl); outline-offset: -3px; }
+#topR .ur svg { width: 22px; height: 22px; }
 #zoomFit {
-  position: fixed; z-index: 25; top: calc(env(safe-area-inset-top, 0px) + 12px); right: calc(env(safe-area-inset-right, 0px) + 12px);
-  display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px 0 10px; border-radius: 19px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px 0 10px; border-radius: 22px; cursor: pointer;
   border: 1px solid var(--panel-line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px;
 }
+#bar #sizeGrp[hidden] { display: none !important; }
 #zoomFit svg { width: 20px; height: 20px; }
 #zoomFit[hidden], .tab[hidden] { display: none; }
 @media (min-width: 1200px) and (min-aspect-ratio: 16/10) {
@@ -308,7 +321,7 @@ body.viewing #barTab, body.viewing #shapesTab, body.viewing #zoomFit { display: 
   #bar button { font-size: clamp(12px, 1.4vh, 16px); }
   #bar button svg { width: clamp(24px, 3vh, 34px); height: clamp(24px, 3vh, 34px); }
   .shell { width: clamp(26px, 3.2vh, 36px); height: clamp(26px, 3.2vh, 36px); }
-  .brand { left: auto; right: 24px; }
+  .brand { left: 24px; right: auto; }
 }
 </style>
 </head>
@@ -336,7 +349,7 @@ body.viewing #barTab, body.viewing #shapesTab, body.viewing #zoomFit { display: 
 <div id="toast" aria-live="polite" hidden></div>
 <button id="barTab" class="tab" type="button" aria-label="도구 서랍 열기" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg><span>도구</span></button>
 <button id="shapesTab" class="tab" type="button" aria-label="무늬 서랍 열기" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg><span>무늬</span></button>
-<button id="zoomFit" type="button" aria-label="원래 크기로" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8 11h6"/></svg><span>원래 크기</span></button>
+<div id="topR"><button id="zoomFit" type="button" aria-label="원래 크기로" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8 11h6"/></svg><span>원래 크기</span></button><div class="ur" role="group" aria-label="되돌리기·다시하기"><button id="undo" type="button" aria-label="되돌리기" title="되돌리기 (Ctrl+Z · 두 손가락 톡)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button id="redo" type="button" aria-label="다시하기" title="다시하기 (Ctrl+Shift+Z · 세 손가락 톡)" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button></div></div>
 <div id="reach" aria-hidden="true" hidden></div>
 <div id="shapes" role="group" aria-label="오릴 무늬" hidden></div>
 <header class="brand"><h1>자개 붓</h1><span>검은 옻칠 위 나전</span></header>
@@ -369,7 +382,7 @@ body.viewing #barTab, body.viewing #shapesTab, body.viewing #zoomFit { display: 
     <button data-shell="128" aria-pressed="false" aria-label="진주 자개"><span class="shell s1"></span><span class="lb">진주</span></button>
     <button data-shell="255" aria-pressed="false" aria-label="야광패 자개"><span class="shell s2"></span><span class="lb">야광패</span></button>
   </div>
-  <div class="grp" role="group" aria-label="굵기">
+  <div class="grp" id="sizeGrp" role="group" aria-label="굵기">
     <button class="sz" data-size="7" aria-pressed="false" aria-label="실처럼 가늘게"><span class="dot" style="width:4px;height:4px"></span><span class="lb">실</span></button>
     <button class="sz" data-size="14" aria-pressed="false" aria-label="가늘게"><span class="dot" style="width:7px;height:7px"></span><span class="lb">가늘게</span></button>
     <button class="sz" data-size="28" aria-pressed="true" aria-label="보통"><span class="dot" style="width:11px;height:11px"></span><span class="lb">보통</span></button>
@@ -377,9 +390,6 @@ body.viewing #barTab, body.viewing #shapesTab, body.viewing #zoomFit { display: 
     <button class="sz" data-size="huge" aria-pressed="false" aria-label="달만큼: 한 번 찍으면 달만 한 원"><span class="dot" style="width:23px;height:23px"></span><span class="lb">달만큼</span></button>
   </div>
   <div class="grp" role="group" aria-label="고치기">
-    <button id="undo" aria-label="되돌리기">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
-      <span class="lb">되돌리기</span></button>
     <button id="clear" aria-label="초기화 (두 번 누르기)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9l8 6M16 9l-8 6" stroke-linecap="round" opacity=".55"/></svg>
       <span class="lb">초기화</span></button>
@@ -601,7 +611,7 @@ function resize() {
     if (oldT && oldT.length === oW * oH) for (let y = 0; y < ph; y++) { const sy = Math.min(oH - 1, (y / s) | 0), Y = y + oy0; if (Y < 0 || Y >= H) continue;
       for (let x = 0; x < pw; x++) { const X = x + ox0; if (X < 0 || X >= W) continue; tech[Y * W + X] = oldT[sy * oW + Math.min(oW - 1, (x / s) | 0)]; } }
   }
-  undoStack.length = 0;
+  undoStack.length = 0; if (typeof redoStack !== 'undefined') { redoStack.length = 0; syncUR(); }
   placeBoard();
   dirty = true;
 }
@@ -1955,6 +1965,7 @@ function end() {
   if (st && st.tool === 'strip' && st.inStrip && st.last && st.stripStart) drawStrip(st.stripStart, st.last);
   techSeams();
   st = null; dirty = true;
+  redoStack.length = 0; syncUR();
 }
 
 /* ---------- 되돌리기 ---------- */
@@ -1962,13 +1973,34 @@ function end() {
 const TECH = { shard: 1, slab: 2, strip: 3, flake: 4, lasso: 5 };
 let tech = new Uint8Array(1);
 const undoStack = [];
-function pushUndo() {
+function pushUndo(keepRedo) {
   try { undoStack.push({ d: dx.getImageData(0, 0, W, H), t: tech.slice() }); } catch (e) {}
   if (undoStack.length > 12) undoStack.shift();
+  if (!keepRedo) redoStack.length = 0;
+  syncUR();
 }
-function undo() {
-  const im = undoStack.pop();
-  if (im && im.d.width === W && im.d.height === H) { dx.putImageData(im.d, 0, 0); if (im.t.length === tech.length) tech = im.t; dirty = true; }
+const redoStack = [];
+function snapState() { try { return { d: dx.getImageData(0, 0, W, H), t: tech.slice() }; } catch (e) { return null; } }
+function applyState(im) {
+  if (im && im.d.width === W && im.d.height === H) { dx.putImageData(im.d, 0, 0); if (im.t.length === tech.length) tech = im.t; dirty = true; return true; }
+  return false;
+}
+/* silent: 그리다 취소한 획을 되돌릴 때는 다시하기에 남기지 않음 */
+function undo(silent) {
+  if (!undoStack.length) return;
+  const cur = silent ? null : snapState();
+  if (applyState(undoStack.pop()) && cur) { redoStack.push(cur); if (redoStack.length > 12) redoStack.shift(); }
+  syncUR();
+}
+function redo() {
+  if (!redoStack.length) return;
+  const cur = snapState();
+  if (applyState(redoStack.pop()) && cur) undoStack.push(cur);
+  syncUR();
+}
+function syncUR() {
+  const u = document.getElementById('undo'), r = document.getElementById('redo');
+  if (u) u.disabled = !undoStack.length; if (r) r.disabled = !redoStack.length;
 }
 function clearAll() { pushUndo(); dx.fillStyle = '#000'; dx.fillRect(0, 0, W, H); tech.fill(0); dirty = true; }
 
@@ -2060,7 +2092,7 @@ function zoomAt(cx, cy, s) {
 function abortStroke() {
   if (!drawing) return;
   drawing = false; st = null; FILL_R = 255;
-  undo(); clearOverlay(); reach.hidden = true; dirty = true;
+  undo(true); clearOverlay(); reach.hidden = true; dirty = true;
 }
 document.addEventListener('pointerdown', e => {
   if (onUI(e) || document.body.classList.contains('viewing') || e.pointerType === 'mouse') return;
@@ -2068,9 +2100,10 @@ document.addEventListener('pointerdown', e => {
   if (pts.size === 2) {
     abortStroke();
     const [a, b] = [...pts.values()];
-    pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, s0: board.s, dx0: board.dx, dy0: board.dy };
+    pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, s0: board.s, dx0: board.dx, dy0: board.dy, t0: performance.now(), moved: 0, n: 2 };
     pinchHold = true;
   }
+  if (pinch && pts.size > pinch.n) pinch.n = pts.size;
   if (pts.size >= 2 || pinchHold) e.stopImmediatePropagation();
 });
 document.addEventListener('pointermove', e => {
@@ -2081,6 +2114,8 @@ document.addEventListener('pointermove', e => {
     const d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     const s = clamp(pinch.s0 * d / pinch.d0, ZMIN, 6);
     const ux = (pinch.mx - pinch.dx0) / pinch.s0, uy = (pinch.my - pinch.dy0) / pinch.s0;
+    pinch.moved = Math.max(pinch.moved, Math.abs(d - pinch.d0), Math.hypot(mx - pinch.mx, my - pinch.my));
+    if (pinch.moved < 10) return;   // 아직은 톡일 수 있음
     zoom.s = s; zoom.dx = mx - ux * s; zoom.dy = my - uy * s; clampZoom();
     placeBoard(true);
   }
@@ -2088,7 +2123,11 @@ document.addEventListener('pointermove', e => {
 });
 function ptrEnd(e) {
   if (!pts.delete(e.pointerId)) return;
-  if (pinch && pts.size < 2) { pinch = null; placeBoard(); }
+  if (pinch && pts.size < 2) {
+    /* 두 손가락 톡 = 되돌리기, 세 손가락 톡 = 다시하기 (그림 앱에서 흔히 쓰는 몸짓) */
+    if (pinch.moved < 10 && performance.now() - pinch.t0 < 320) { if (pinch.n >= 3) redo(); else undo(); }
+    pinch = null; placeBoard();
+  }
   if (pts.size === 0) pinchHold = false;
 }
 document.addEventListener('pointerup', ptrEnd, true); document.addEventListener('pointercancel', ptrEnd, true);
@@ -2109,7 +2148,7 @@ document.addEventListener('pointerdown', e => {
   try { glCanvas.setPointerCapture(e.pointerId); } catch (_) {}
   drawing = true; wfSmooth = 1; lastCss = null;
   if (!userDrew) { userDrew = true; hint.classList.add('gone'); }
-  pushUndo();
+  pushUndo(true);   // 획이 끝나 확정될 때 다시하기 목록을 비움 (두·세 손가락 톡으로 취소될 수 있으므로)
   begin(state.tool, state.shell, sizeNow());
   st.before = undoStack[undoStack.length - 1];
   if (st.before && TECH[state.tool]) FILL_R = 254;
@@ -2153,11 +2192,12 @@ function choose(attr, val) {
 }
 bar.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.tool) { state.tool = b.dataset.tool; if (state.tool === 'lasso') shapesFolded = false; choose('tool', b.dataset.tool); showShapes(); if (state.tool !== 'flake') reach.hidden = true; }
+  if (b.dataset.tool) { state.tool = b.dataset.tool; if (state.tool === 'lasso') shapesFolded = false; document.getElementById('sizeGrp').hidden = state.tool === 'lasso'; choose('tool', b.dataset.tool); showShapes(); if (state.tool !== 'flake') reach.hidden = true; }
   else if (b.dataset.shell) { state.shell = +b.dataset.shell; choose('shell', b.dataset.shell); if (!shapesEl.hidden) renderShapes(); }
   else if (b.dataset.size) { state.sizeKey = b.dataset.size; choose('size', b.dataset.size); }
 });
 document.getElementById('undo').addEventListener('click', () => { finishDemo(); undo(); });
+document.getElementById('redo').addEventListener('click', () => redo());
 const clearBtn = document.getElementById('clear');
 let armTimer = 0;
 clearBtn.addEventListener('click', () => {
@@ -2174,7 +2214,20 @@ clearBtn.addEventListener('click', () => {
   }, 2600);
 });
 window.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+  const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+  if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+  else if (mod && k === '0') { e.preventDefault(); zoom.s = 1; placeBoard(); }
+  else if (!mod && !e.altKey && (document.activeElement === document.body || !document.activeElement) && !document.body.classList.contains('viewing')) {
+    /* 한 글자 단축키: B 붓, S 통자개, C 오리기, E 선각, L 끊음질, F 부스러기, [ ] 굵기 */
+    const map = { b: 'shard', s: 'slab', c: 'lasso', e: 'carve', l: 'strip', f: 'flake' };
+    const tb = map[k] && bar.querySelector('[data-tool="' + map[k] + '"]');
+    if (tb) { tb.click(); return; }
+    if (k === '[' || k === ']') {
+      const szs = [...bar.querySelectorAll('[data-size]')], i = szs.findIndex(x => x.getAttribute('aria-pressed') === 'true');
+      const n = szs[clamp(i + (k === ']' ? 1 : -1), 0, szs.length - 1)]; if (n) n.click();
+    }
+  }
 });
 
 /* 휴대폰 기울이기 → 빛 방향 (버튼 없이 늘 켜짐)
@@ -2527,6 +2580,7 @@ gridEl.addEventListener('click', e => {
   state.motif = b.dataset.motif; setTip();
   gridEl.querySelectorAll('.tile').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
 });
+bar.querySelectorAll('button[aria-label]').forEach(b => { if (!b.title) b.title = b.getAttribute('aria-label'); });
 renderShapes();
 /* ---------- 서랍: 도구 띠와 무늬 창을 따로 접어 내리기 ---------- */
 var barTab = document.getElementById('barTab'), shapesTab = document.getElementById('shapesTab');
@@ -2539,7 +2593,7 @@ function placeShapes() {
   const r = barFolded ? barTab.getBoundingClientRect() : bar.getBoundingClientRect();
   for (const el of [shapesEl, shapesTab]) { if (!el) continue;
     if (el.hidden) continue;
-    if (wideMQ.matches) { el.style.left = (r.right + 10) + 'px'; el.style.bottom = ''; }
+    if (wideMQ.matches) { el.style.left = (r.right + (barFolded ? 10 : 24)) + 'px'; el.style.bottom = ''; }
     else { el.style.left = el === shapesTab ? '50%' : ''; el.style.bottom = (window.innerHeight - r.top + (barFolded ? 10 : 24)) + 'px'; }
   }
 }
