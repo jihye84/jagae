@@ -2214,7 +2214,8 @@ clearBtn.addEventListener('click', () => {
   }, 2600);
 });
 window.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+  /* 한글 입력 상태(ㅠ, ㄴ…)에서도 되도록 글자 대신 자판 위치(e.code)로 읽음 */
+  const c = e.code || '', k = c.startsWith('Key') ? c.slice(3).toLowerCase() : c === 'BracketLeft' ? '[' : c === 'BracketRight' ? ']' : c === 'Digit0' ? '0' : e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
   if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
   else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
   else if (mod && k === '0') { e.preventDefault(); zoom.s = 1; placeBoard(); }
