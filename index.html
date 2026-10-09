@@ -557,7 +557,7 @@ const zoom = { s: 1, dx: 0, dy: 0 };
 function boardCss() {
   const dw = board.w * board.s, dh = board.h * board.s;
   for (const c of [glCanvas, ov]) { c.style.left = board.dx + 'px'; c.style.top = board.dy + 'px'; c.style.width = dw + 'px'; c.style.height = dh + 'px'; }
-  const zf = document.getElementById('zoomFit'); if (zf) zf.hidden = !(zoom.s > 1.01) || document.body.classList.contains('viewing');
+  const zf = document.getElementById('zoomFit'); if (zf) zf.hidden = !(Math.abs(zoom.s - 1) > 0.01) || document.body.classList.contains('viewing');
 }
 function placeBoard(cssOnly) {
   const viewing = document.body.classList.contains('viewing');
@@ -565,7 +565,7 @@ function placeBoard(cssOnly) {
   if (viewing) {
     board.s = Math.min((vw - 2 * m) / board.w, (vh - 2 * m) / board.h);
     board.dx = (vw - board.w * board.s) / 2; board.dy = (vh - board.h * board.s) / 2;
-  } else if (zoom.s > 1) { board.s = zoom.s; board.dx = zoom.dx; board.dy = zoom.dy; }
+  } else if (zoom.s !== 1) { board.s = zoom.s; board.dx = zoom.dx; board.dy = zoom.dy; }
   else { board.s = 1; board.dx = board.x; board.dy = board.y; }
   boardCss();
   if (cssOnly) return;
@@ -2041,12 +2041,15 @@ function widthFactor(e, x, y, t) {
 const UI_SEL = '#bar, #shapes, #viewBtns, #sheet, button, a, input, select, [role="dialog"]';
 const onUI = e => !!(e.target && e.target.closest && e.target.closest(UI_SEL));
 /* ---------- 두 손가락 핀치: 판 확대·축소와 옮기기 (그리던 획은 취소) ---------- */
+const ZMIN = 0.8;   // 80%까지 줄여 판 둘레에 여백을 둠
 const pts = new Map();
 let pinch = null, pinchHold = false;
 function clampZoom() {
-  zoom.s = clamp(zoom.s, 1, 6);
-  if (zoom.s <= 1.001) { zoom.s = 1; zoom.dx = board.x; zoom.dy = board.y; return; }
+  zoom.s = clamp(zoom.s, ZMIN, 6);
+  if (Math.abs(zoom.s - 1) < 0.02) { zoom.s = 1; zoom.dx = board.x; zoom.dy = board.y; return; }
   const dw = board.w * zoom.s, dh = board.h * zoom.s;
+  /* 1보다 작게: 판이 제자리 가운데에서 줄어들어 둘레에 여백이 생김 */
+  if (zoom.s < 1) { zoom.dx = board.x + (board.w - dw) / 2; zoom.dy = board.y + (board.h - dh) / 2; return; }
   zoom.dx = clamp(zoom.dx, board.x + board.w - dw, board.x);
   zoom.dy = clamp(zoom.dy, board.y + board.h - dh, board.y);
 }
@@ -2076,7 +2079,7 @@ document.addEventListener('pointermove', e => {
   if (pinch && pts.size >= 2) {
     const [a, b] = [...pts.values()];
     const d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    const s = clamp(pinch.s0 * d / pinch.d0, 1, 6);
+    const s = clamp(pinch.s0 * d / pinch.d0, ZMIN, 6);
     const ux = (pinch.mx - pinch.dx0) / pinch.s0, uy = (pinch.my - pinch.dy0) / pinch.s0;
     zoom.s = s; zoom.dx = mx - ux * s; zoom.dy = my - uy * s; clampZoom();
     placeBoard(true);
@@ -2094,7 +2097,7 @@ let wheelT = 0;
 document.addEventListener('wheel', e => {
   if (onUI(e) || document.body.classList.contains('viewing')) return;
   e.preventDefault();
-  zoomAt(e.clientX, e.clientY, clamp(board.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), 1, 6));
+  zoomAt(e.clientX, e.clientY, clamp(board.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), ZMIN, 6));
   placeBoard(true); clearTimeout(wheelT); wheelT = setTimeout(() => placeBoard(), 160);
 }, { passive: false });
 document.getElementById('zoomFit').addEventListener('click', () => { zoom.s = 1; placeBoard(); });
