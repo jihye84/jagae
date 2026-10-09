@@ -195,6 +195,20 @@ body {
 #sheet #go { appearance: none; border: 0; cursor: pointer; min-height: 56px; padding: 0 32px; border-radius: 999px; font: inherit; font-size: clamp(16px, 2.6vmin, 22px);
   background: var(--pearl); color: var(--lacquer); box-shadow: 0 6px 30px rgba(232, 224, 234, .18); }
 #sheet #go:focus-visible { outline: 2px solid var(--cinnabar); outline-offset: 3px; }
+#ratios { display: grid; grid-template-columns: repeat(3, 92px); gap: 8px; margin: 2px 0 14px; }
+#ratios button { appearance: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 78px; padding: 8px 4px; border-radius: 14px; cursor: pointer;
+  border: 1px solid rgba(233, 222, 210, .14); background: rgba(255, 255, 255, .03); color: var(--muted); font: inherit; font-size: 12px; }
+#ratios button i { display: block; height: 36px; max-width: 60px; border-radius: 3px; background: #050403; box-shadow: 0 0 0 1px rgba(214, 186, 160, .35); }
+#ratios button[aria-checked="true"] { border-color: rgba(232, 224, 234, .55); background: rgba(232, 224, 234, .1); color: var(--ink); }
+#ratios button[aria-checked="true"] i { background: linear-gradient(135deg, #3b8c96, #6b5bb0 50%, #c9a77a); }
+#ratios button i[style*="16/9"] { height: auto; width: 58px; }
+#ratios button i[style*="4/3"] { height: auto; width: 47px; }
+@media (max-height: 640px) { #ratios { grid-template-columns: repeat(6, 74px); } #ratios button { height: 64px; } #ratios button i { height: 26px; } #ratios button i[style*="16/9"], #ratios button i[style*="4/3"] { width: 44px; } }
+#rotate { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  background: #0c0908; color: var(--ink); text-align: center; font-size: 15px; }
+#rotate[hidden] { display: none; }
+#rotate svg { width: 64px; height: 64px; color: var(--pearl); }
+#rotate span { color: var(--muted); font-size: 13px; }
 #sheet small { margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 #viewBtns {
   position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 30;
@@ -305,9 +319,18 @@ body.viewing #barTab, body.viewing #shapesTab, body.viewing #zoomFit { display: 
 <div id="sheet" role="dialog" aria-label="시작">
   <h2>자개 붓</h2>
   <p>검은 옻칠 위에 자개로 그리는 그림</p>
+  <div id="ratios" role="radiogroup" aria-label="옻칠판 모양">
+    <button type="button" role="radio" data-r="0" aria-checked="true"><i style="aspect-ratio:9/17"></i><span>화면 맞춤</span></button>
+    <button type="button" role="radio" data-r="1"><i style="aspect-ratio:1"></i><span>정사각형</span></button>
+    <button type="button" role="radio" data-r="0.75"><i style="aspect-ratio:3/4"></i><span>3:4</span></button>
+    <button type="button" role="radio" data-r="1.3333"><i style="aspect-ratio:4/3"></i><span>4:3</span></button>
+    <button type="button" role="radio" data-r="0.5"><i style="aspect-ratio:1/2"></i><span>족자 1:2</span></button>
+    <button type="button" role="radio" data-r="1.7778"><i style="aspect-ratio:16/9"></i><span>16:9</span></button>
+  </div>
   <button id="go" type="button">옻칠판 펼치기</button>
   <small id="iosTip" hidden>아이폰에서는 공유 버튼 → <b>홈 화면에 추가</b>로 열면<br>주소창 없이 화면 가득 쓸 수 있어요.</small>
 </div>
+<div id="rotate" role="alert" hidden><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="15" y="6" width="18" height="32" rx="3"/><path d="M22 33h4"/><path d="M40 20a14 14 0 0 0-6-9M37 12l-3-1 .5 3"/></svg><b>휴대폰을 세로로 세워 주세요</b><span>자개 붓은 세로 화면에서 그려요.</span></div>
 <div id="viewBtns" hidden><button id="snapV" class="vbtn" aria-label="작품 사진으로 저장"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2.6l1.6-2.2h5.6L16.4 7H19a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="12.8" r="3.4"/></svg><span>사진</span></button><button id="showTools" class="vbtn" aria-label="도구 꺼내기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 18l3-1 2 2-1 3-4-4z"/><path d="M9 19L20 6a1.6 1.6 0 0 0-2.3-2.2L6.5 16"/></svg><span>도구</span></button></div>
 <div id="flash" aria-hidden="true"></div>
 <div id="toast" aria-live="polite" hidden></div>
@@ -510,6 +533,8 @@ satProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibilit
 document.body.appendChild(satProbe);
 /* 도구 띠를 서랍에 넣어도 판 크기는 그대로: 마지막으로 펼쳐져 있던 자리를 기억 */
 let lastBarRect = null;
+let boardAspect = 0;   // 0 = 화면 맞춤, 아니면 가로/세로 비
+try { const v = +localStorage.getItem('jagae.aspect'); if (v > 0) boardAspect = v; } catch (_) {}
 function barRect() {
   if (!bar.classList.contains('folded') || !lastBarRect) lastBarRect = bar.getBoundingClientRect();
   return lastBarRect;
@@ -522,7 +547,7 @@ function boardRect() {
     ? { x: r.right + m, y: m + st, w: vw - r.right - 2 * m, h: vh - 2 * m - st }
     : { x: m, y: m + st, w: vw - 2 * m, h: Math.max(160, r.top - m - (m + st)) };
   /* 판의 가로세로 비율을 화면과 같게: 감상할 때 화면을 빈틈없이 채우도록 */
-  const k = (vw - 12) / (vh - 12);
+  const k = boardAspect || (vw - 12) / (vh - 12);
   let w = g.w, h = g.h;
   if (w / h > k) w = h * k; else h = w / k;
   return { x: g.x + (g.w - w) / 2, y: g.y + (g.h - h) / 2, w, h };
@@ -2125,7 +2150,7 @@ function choose(attr, val) {
 }
 bar.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.tool) { state.tool = b.dataset.tool; choose('tool', b.dataset.tool); showShapes(); if (state.tool !== 'flake') reach.hidden = true; }
+  if (b.dataset.tool) { state.tool = b.dataset.tool; if (state.tool === 'lasso') shapesFolded = false; choose('tool', b.dataset.tool); showShapes(); if (state.tool !== 'flake') reach.hidden = true; }
   else if (b.dataset.shell) { state.shell = +b.dataset.shell; choose('shell', b.dataset.shell); if (!shapesEl.hidden) renderShapes(); }
   else if (b.dataset.size) { state.sizeKey = b.dataset.size; choose('size', b.dataset.size); }
 });
@@ -2184,7 +2209,13 @@ const canFS = !!(document.documentElement.requestFullscreen || document.document
 function enterFS() {
   const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen;
   if (!f || fsEl()) return;
-  try { const r = f.call(el, { navigationUI: 'hide' }); if (r && r.catch) r.catch(() => {}); } catch (_) {}
+  try { const r = f.call(el, { navigationUI: 'hide' }); if (r && r.then) r.then(lockPortrait, () => {}); else lockPortrait(); } catch (_) {}
+}
+/* 휴대폰은 세로 화면으로 고정 (전체화면일 때 안드로이드 크롬이 허락함). 고정이 안 되는 기기는 가로로 눕히면 안내를 띄움 */
+const isPhone = () => Math.min(screen.width, screen.height) < 540 && matchMedia('(pointer: coarse)').matches;
+function lockPortrait() {
+  if (!isPhone()) return;
+  try { const o = screen.orientation; if (o && o.lock) o.lock('portrait').catch(() => {}); } catch (_) {}
 }
 function exitFS() { const f = document.exitFullscreen || document.webkitExitFullscreen; if (f && fsEl()) try { const r = f.call(document); if (r && r.catch) r.catch(() => {}); } catch (_) {} }
 function syncFS() { const on = !!fsEl(); fsBtn.querySelector('.lb').textContent = on ? '창 모드' : '전체화면'; fsBtn.setAttribute('aria-label', on ? '전체화면 끝내기' : '전체화면'); }
@@ -2204,7 +2235,16 @@ window.addEventListener('pointerup', () => { if (wantFS && !fsEl() && sheetEl.cl
 // 시작 화면: 펼치기를 누르면 전체화면 + (아이폰) 기울기 허락을 한 번에
 const sheetEl = document.getElementById('sheet');
 if (/iPhone|iPod/.test(navigator.userAgent) && !standalone) document.getElementById('iosTip').hidden = false;
+const ratiosEl = document.getElementById('ratios');
+ratiosEl.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.r === boardAspect)));
+ratiosEl.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  boardAspect = +b.dataset.r;
+  ratiosEl.querySelectorAll('button').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+  try { localStorage.setItem('jagae.aspect', String(boardAspect)); } catch (_) {}
+});
 document.getElementById('go').addEventListener('click', () => {
+  resize();
   if (wantFS) enterFS();
   try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')
     DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') window.addEventListener('deviceorientation', onOrient); }).catch(() => {}); } catch (_) {}
@@ -2394,7 +2434,13 @@ function frame(now) {
 }
 
 let rT = 0;
-window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { resize(); placeShapes(); }, 120); });
+const rotateEl = document.getElementById('rotate');
+function phoneLandscape() { return isPhone() && window.innerWidth > window.innerHeight; }
+window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => {
+  rotateEl.hidden = !phoneLandscape();
+  if (!rotateEl.hidden) return;            // 눕혀 있는 동안은 판을 다시 계산하지 않아 그림이 줄어들지 않음
+  resize(); placeShapes(); }, 120); });
+rotateEl.hidden = !phoneLandscape();
 /* 오릴 무늬 고르기 */
 const MOTIF_BY = {}; MOTIFS.forEach(m => { MOTIF_BY[m.key] = m; });
 const shapesEl = document.getElementById('shapes');
