@@ -219,6 +219,10 @@ body {
   display: flex; gap: 8px;
 }
 #viewBtns[hidden] { display: none; }
+/* 감상: 처음엔 완전히 숨김 → 화면을 한 번 톡 치면 나타났다가 잠시 뒤 다시 사라짐 */
+#viewBtns { opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; }
+#viewBtns.peek { opacity: 1; pointer-events: auto; transform: none; }
+#viewBtns .vbtn { opacity: .9; }
 .vbtn {
   display: flex; align-items: center; gap: 6px; height: 48px; padding: 0 16px 0 12px; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--panel-line); background: var(--panel); color: var(--ink); font: inherit; font-size: 14px;
@@ -2179,7 +2183,7 @@ document.getElementById('zoomFit').addEventListener('click', () => { zoom.s = 1;
 document.addEventListener('pointerdown', e => {
   if (e.button !== undefined && e.button > 0) return;
   if (onUI(e) || pinch || pinchHold) return;
-  if (document.body.classList.contains('viewing')) { setLightFromPointer(bx(e), by(e)); return; }
+  if (document.body.classList.contains('viewing')) { setLightFromPointer(bx(e), by(e)); peekView(); return; }
   finishDemo();
   try { glCanvas.setPointerCapture(e.pointerId); } catch (_) {}
   drawing = true; wfSmooth = 1; lastCss = null;
@@ -2387,10 +2391,15 @@ document.getElementById('go').addEventListener('click', () => {
 });
 let toastT = 0;
 function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { toastEl.hidden = true; }, 2600); }
+let peekT = 0;
+function peekView() {
+  const v = document.getElementById('viewBtns'); v.classList.add('peek');
+  clearTimeout(peekT); peekT = setTimeout(() => v.classList.remove('peek'), 3500);
+}
 function setViewing(on) {
   document.body.classList.toggle('viewing', on);
   document.getElementById('viewBtns').hidden = !on;
-  if (on) { reach.hidden = true; clearOverlay(); toast('작품 감상 중 · 오른쪽 아래 「도구」로 다시 꺼내요'); enterFS(); placeBoard(); }
+  if (on) { reach.hidden = true; clearOverlay(); toast('감상 중 · 화면을 톡 치면 버튼이 나와요'); document.getElementById('viewBtns').classList.remove('peek'); enterFS(); placeBoard(); }
   else { toastEl.hidden = true; resize(); }
 }
 hideBtn.addEventListener('click', () => setViewing(true));
